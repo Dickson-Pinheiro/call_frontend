@@ -1,16 +1,15 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from "react";
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/AppLayout";
 import { requireAuth } from "@/lib/auth";
+import { useCall } from "@/hooks/useCall";
 import { 
   Video, 
   History, 
   Users, 
   Play, 
-  LogOut, 
-  Settings,
-  Zap
+  Zap,
+  Loader2
 } from "lucide-react";
 
 export const Route = createFileRoute('/app/dashboard')({
@@ -19,15 +18,8 @@ export const Route = createFileRoute('/app/dashboard')({
 })
 
 function RouteComponent() {
-  const [isSearching, setIsSearching] = useState(false);
-  const navigate = useNavigate();
-
-  const handleStartCall = () => {
-    setIsSearching(true);
-    setTimeout(() => {
-      navigate({ to: "/app/call" });
-    }, 2000);
-  };
+  const { startSearching, callState } = useCall();
+  const isSearching = callState === 'searching';
 
   const stats = [
     { label: "Chamadas hoje", value: "12", icon: Video },
@@ -49,32 +41,8 @@ function RouteComponent() {
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl" />
         
         <div className="max-w-6xl mx-auto relative z-10">
-        {/* Header */}
-        <header className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Video className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-gradient">RandomCall</span>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-              <Settings className="w-5 h-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => navigate({ to: "/" })}
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
-        </header>
-
-        {/* Main content */}
-        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Main content */}
+          <div className="grid lg:grid-cols-3 gap-6">
           {/* Left column - Start call */}
           <div className="lg:col-span-2 space-y-6">
             {/* Hero card */}
@@ -89,13 +57,13 @@ function RouteComponent() {
                 </p>
                 
                 <Button 
-                  onClick={handleStartCall}
+                  onClick={startSearching}
                   disabled={isSearching}
                   className="h-14 px-10 text-lg gradient-primary text-primary-foreground font-semibold hover:opacity-90 transition-all gradient-glow"
                 >
                   {isSearching ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Buscando...
                     </>
                   ) : (
@@ -125,15 +93,16 @@ function RouteComponent() {
             <div className="glass rounded-3xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Chamadas recentes</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-primary hover:text-primary/80"
-                  onClick={() => navigate({ to: "/app/history" })}
-                >
-                  <History className="w-4 h-4 mr-1" />
-                  Ver todas
-                </Button>
+                <Link to="/app/history">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-primary hover:text-primary/80"
+                  >
+                    <History className="w-4 h-4 mr-1" />
+                    Ver todas
+                  </Button>
+                </Link>
               </div>
               
               <div className="space-y-3">
