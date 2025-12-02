@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChatPanel, type Message } from "@/components/ChatPanel";
+import { AppLayout } from "@/components/AppLayout";
+import { requireAuth } from "@/lib/auth";
 import { 
   Video, 
   VideoOff, 
@@ -14,6 +16,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute('/app/call')({
+  beforeLoad: requireAuth,
   component: RouteComponent,
 })
 
@@ -49,9 +52,10 @@ function RouteComponent() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background relative overflow-hidden">
-      {/* Main video area */}
-      <div className="flex-1 relative">
+    <AppLayout>
+      <div className="flex flex-col bg-background relative overflow-hidden -mx-4 -my-8" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+        {/* Main video area */}
+        <div className="flex-1 relative">
         {/* Remote video (placeholder) */}
         <div className="absolute inset-0 bg-linear-to-br from-secondary to-card flex items-center justify-center">
           <div className="text-center">
@@ -150,6 +154,7 @@ function RouteComponent() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

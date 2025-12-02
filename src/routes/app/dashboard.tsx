@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { AppLayout } from "@/components/AppLayout";
+import { requireAuth } from "@/lib/auth";
 import { 
   Video, 
   History, 
@@ -12,6 +14,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute('/app/dashboard')({
+  beforeLoad: requireAuth,
   component: RouteComponent,
 })
 
@@ -39,12 +42,13 @@ function RouteComponent() {
   ];
 
   return (
-    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-linear-to-br from-background via-background to-primary/5" />
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl" />
-      
-      <div className="max-w-6xl mx-auto relative z-10">
+    <AppLayout>
+      <div className="relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-linear-to-br from-background via-background to-primary/5" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl" />
+        
+        <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -179,6 +183,7 @@ function RouteComponent() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

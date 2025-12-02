@@ -1,25 +1,37 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Video, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { useSignup } from "@/services";
+import { signupSchema, type SignupFormData } from "@/lib/validations/auth";
+import { redirectIfAuthenticated } from "@/lib/auth";
 
 export const Route = createFileRoute('/register')({
+  beforeLoad: redirectIfAuthenticated,
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
+  const signup = useSignup();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate({ to: "/app/dashboard" });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+  });
+
+  const onSubmit = (data: SignupFormData) => {
+    // Remove confirmPassword antes de enviar para API
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { confirmPassword, ...signupData } = data;
+    signup.mutate(signupData);
   };
 
   return (
@@ -43,7 +55,7 @@ function RouteComponent() {
         <div className="glass rounded-2xl p-8">
           <h2 className="text-xl font-semibold mb-6">Criar nova conta</h2>
           
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>
               <div className="relative">
@@ -52,11 +64,13 @@ function RouteComponent() {
                   id="name"
                   type="text"
                   placeholder="Seu nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  {...register("name")}
                   className="pl-11 h-12 bg-secondary/50 border-border/50 focus:border-primary"
                 />
               </div>
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -67,11 +81,13 @@ function RouteComponent() {
                   id="email"
                   type="email"
                   placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register("email")}
                   className="pl-11 h-12 bg-secondary/50 border-border/50 focus:border-primary"
                 />
               </div>
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -82,8 +98,7 @@ function RouteComponent() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register("password")}
                   className="pl-11 pr-11 h-12 bg-secondary/50 border-border/50 focus:border-primary"
                 />
                 <button
@@ -94,6 +109,9 @@ function RouteComponent() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -104,15 +122,29 @@ function RouteComponent() {
                   id="confirmPassword"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  {...register("confirmPassword")}
                   className="pl-11 h-12 bg-secondary/50 border-border/50 focus:border-primary"
                 />
               </div>
+              {errors.confirmPassword && (
+                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+              )}
             </div>
 
-            <Button type="submit" className="w-full h-12 gradient-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
-              Criar conta
+            {signup.isError && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <p className="text-sm text-destructive">
+                  {signup.error?.message || "Erro ao criar conta. Tente novamente."}
+                </p>
+              </div>
+            )}
+
+            <Button 
+              type="submit" 
+              disabled={signup.isPending}
+              className="w-full h-12 gradient-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
+            >
+              {signup.isPending ? "Criando conta..." : "Criar conta"}
             </Button>
           </form>
 
