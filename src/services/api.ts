@@ -19,6 +19,19 @@ export const removeToken = (): void => {
   localStorage.removeItem('token');
 };
 
+export const setUserId = (userId: number): void => {
+  localStorage.setItem('userId', userId.toString());
+};
+
+export const getUserId = (): number | null => {
+  const userId = localStorage.getItem('userId');
+  return userId ? parseInt(userId, 10) : null;
+};
+
+export const removeUserId = (): void => {
+  localStorage.removeItem('userId');
+};
+
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getToken();

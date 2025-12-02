@@ -1,8 +1,16 @@
 import { createContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
-import { useWebSocket, type MatchFound, type WebRTCSignal } from '@/services';
+import { useWebSocket, type MatchFound, type WebRTCSignal, getUserId } from '@/services';
 import { useNavigate } from '@tanstack/react-router';
 
 export type CallState = 'idle' | 'searching' | 'connecting' | 'connected' | 'ended';
+
+export interface ChatMessageUI {
+  id: string;
+  text: string;
+  isOwn: boolean;
+  time: string;
+  senderName?: string;
+}
 
 interface CallContextValue {
   // Estado
@@ -17,6 +25,10 @@ interface CallContextValue {
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   
+  // Chat
+  messages: ChatMessageUI[];
+  isTyping: boolean;
+  
   // Ações
   startSearching: () => void;
   stopSearching: () => void;
@@ -24,6 +36,8 @@ interface CallContextValue {
   endCall: () => void;
   toggleVideo: () => void;
   toggleAudio: () => void;
+  sendChatMessage: (message: string) => void;
+  sendTypingIndicator: () => void;
 }
 
 const CallContext = createContext<CallContextValue | null>(null);
@@ -44,6 +58,11 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  
+  // Chat
+  const [messages, setMessages] = useState<ChatMessageUI[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refs
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -65,6 +84,8 @@ export function CallProvider({ children }: CallProviderProps) {
     nextPerson: wsNextPerson,
     endCall: wsEndCall,
     sendWebRTCSignal,
+    sendChatMessage: wsSendChatMessage,
+    sendTyping: wsSendTyping,
     updateHandlers,
     isConnected,
   } = useWebSocket({
@@ -93,23 +114,40 @@ export function CallProvider({ children }: CallProviderProps) {
     setPeerName(null);
     setIsVideoEnabled(true);
     setIsAudioEnabled(true);
+    setMessages([]);
+    setIsTyping(false);
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
   }, []);
 
   // Processar sinais WebRTC recebidos
   const handleWebRTCSignal = useCallback(async (signal: WebRTCSignal) => {
     const pc = peerConnectionRef.current;
     if (!pc) {
-      console.warn('PeerConnection não existe ainda');
+      console.warn('⚠️ PeerConnection não existe ainda');
       return;
     }
+
+    console.log('📡 Processando sinal WebRTC:', {
+      type: signal.type,
+      callId: signal.callId,
+      peerConnectionState: pc.connectionState,
+      iceConnectionState: pc.iceConnectionState,
+      signalingState: pc.signalingState
+    });
 
     try {
       if (signal.type === 'offer') {
         console.log('📥 Processando offer');
         await pc.setRemoteDescription(new RTCSessionDescription(signal.data as RTCSessionDescriptionInit));
+        console.log('✅ RemoteDescription (offer) configurada');
         
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
+        console.log('✅ LocalDescription (answer) configurada');
 
         console.log('📤 Enviando answer');
         sendWebRTCSignal({
@@ -121,10 +159,18 @@ export function CallProvider({ children }: CallProviderProps) {
       } else if (signal.type === 'answer') {
         console.log('📥 Processando answer');
         await pc.setRemoteDescription(new RTCSessionDescription(signal.data as RTCSessionDescriptionInit));
+        console.log('✅ RemoteDescription (answer) configurada');
       } else if (signal.type === 'ice-candidate') {
         console.log('🧊 Adicionando ICE candidate');
         await pc.addIceCandidate(new RTCIceCandidate(signal.data as RTCIceCandidateInit));
+        console.log('✅ ICE candidate adicionado');
       }
+      
+      console.log('📊 Estado após processamento:', {
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState,
+        signalingState: pc.signalingState
+      });
     } catch (error) {
       console.error('❌ Erro ao processar sinal WebRTC:', error);
     }
@@ -161,9 +207,29 @@ export function CallProvider({ children }: CallProviderProps) {
       });
 
       pc.ontrack = (event) => {
-        console.log('📹 Remote track recebido');
-        setRemoteStream(event.streams[0]);
-        setCallState('connected');
+        console.log('📹 Remote track recebido:', {
+          streams: event.streams,
+          streamCount: event.streams.length,
+          track: event.track,
+          trackKind: event.track.kind,
+          trackEnabled: event.track.enabled,
+          trackReadyState: event.track.readyState
+        });
+        
+        if (event.streams && event.streams[0]) {
+          console.log('✅ Configurando remoteStream:', {
+            streamId: event.streams[0].id,
+            tracks: event.streams[0].getTracks().map(t => ({
+              kind: t.kind,
+              enabled: t.enabled,
+              readyState: t.readyState
+            }))
+          });
+          setRemoteStream(event.streams[0]);
+          setCallState('connected');
+        } else {
+          console.warn('⚠️ Nenhum stream recebido no evento ontrack');
+        }
       };
 
       pc.onicecandidate = (event) => {
@@ -248,6 +314,65 @@ export function CallProvider({ children }: CallProviderProps) {
         console.log('📡 WebRTC Signal recebido:', signal.type);
         await handleWebRTCSignal(signal);
       },
+      onChatMessage: (data) => {
+        console.log('💬 Mensagem de chat recebida:', {
+          messageId: data.id,
+          senderId: data.senderId,
+          senderName: data.senderName,
+          message: data.message,
+          sentAt: data.sentAt
+        });
+        
+        // Obter userId do localStorage
+        const currentUserId = getUserId();
+        console.log('👤 Current User ID:', currentUserId);
+        console.log('📤 Sender ID:', data.senderId);
+        console.log('🔍 Comparação:', {
+          currentUserId,
+          senderId: data.senderId,
+          areEqual: currentUserId === data.senderId,
+          types: {
+            currentUserId: typeof currentUserId,
+            senderId: typeof data.senderId
+          }
+        });
+        
+        // Verificar se a mensagem foi enviada pelo próprio usuário
+        const isOwnMessage = currentUserId !== null && data.senderId === currentUserId;
+        
+        // Se for mensagem própria, não adicionar (já foi adicionada localmente)
+        if (isOwnMessage) {
+          console.log('📝 Mensagem própria detectada, ignorando duplicação');
+          return;
+        }
+        
+        console.log('✅ Adicionando mensagem de outro usuário');
+        const newMessage: ChatMessageUI = {
+          id: data.id.toString(),
+          text: data.message,
+          isOwn: false,
+          time: new Date(data.sentAt).toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          senderName: data.senderName,
+        };
+        setMessages(prev => [...prev, newMessage]);
+      },
+      onTyping: (data) => {
+        console.log('⌨️ Indicador de digitação:', data.isTyping);
+        setIsTyping(data.isTyping);
+        
+        // Auto-limpar depois de 3 segundos
+        if (data.isTyping) {
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+          }
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+          }, 3000);
+        }
+      },
       onCallEnded: (data) => {
         console.log('📞 Chamada encerrada:', data);
         cleanupCall();
@@ -324,6 +449,41 @@ export function CallProvider({ children }: CallProviderProps) {
     }
   }, []);
 
+  // Enviar mensagem de chat
+  const sendChatMessage = useCallback((message: string) => {
+    if (!currentCallId || !message.trim()) return;
+    
+    const currentUserId = getUserId();
+    console.log('📤 Enviando mensagem de chat:', {
+      message,
+      callId: currentCallId,
+      currentUserId,
+      userIdType: typeof currentUserId
+    });
+    
+    wsSendChatMessage(currentCallId, message);
+    
+    // Adicionar mensagem própria à lista
+    const newMessage: ChatMessageUI = {
+      id: Date.now().toString(),
+      text: message,
+      isOwn: true,
+      time: new Date().toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+    };
+    console.log('✅ Mensagem adicionada localmente:', newMessage);
+    setMessages(prev => [...prev, newMessage]);
+  }, [currentCallId, wsSendChatMessage]);
+
+  // Enviar indicador de digitação
+  const sendTypingIndicator = useCallback(() => {
+    if (!currentCallId) return;
+    
+    wsSendTyping(currentCallId);
+  }, [currentCallId, wsSendTyping]);
+
   const value: CallContextValue = {
     callState,
     currentCallId,
@@ -333,12 +493,16 @@ export function CallProvider({ children }: CallProviderProps) {
     isAudioEnabled,
     localStream,
     remoteStream,
+    messages,
+    isTyping,
     startSearching,
     stopSearching,
     nextPerson,
     endCall,
     toggleVideo,
     toggleAudio,
+    sendChatMessage,
+    sendTypingIndicator,
   };
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;

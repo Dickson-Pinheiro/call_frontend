@@ -30,15 +30,19 @@ function RouteComponent() {
     isAudioEnabled,
     localStream,
     remoteStream,
+    messages: chatMessages,
+    isTyping,
     stopSearching,
     nextPerson,
     endCall,
     toggleVideo,
     toggleAudio,
+    sendChatMessage,
+    sendTypingIndicator,
   } = useCall();
 
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [lastReadCount, setLastReadCount] = useState(0);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -55,15 +59,32 @@ function RouteComponent() {
     }
   }, [remoteStream]);
 
+  // Converter ChatMessageUI para Message (formato do ChatPanel)
+  const messages: Message[] = chatMessages.map(msg => ({
+    id: msg.id,
+    text: msg.text,
+    isOwn: msg.isOwn,
+    time: msg.time,
+  }));
+
+  // Calcular mensagens não lidas (apenas mensagens recebidas depois de marcar como lido)
+  const totalReceivedMessages = chatMessages.filter(msg => !msg.isOwn).length;
+  const unreadCount = isChatOpen ? 0 : Math.max(0, totalReceivedMessages - lastReadCount);
+
+  // Ao abrir o chat, marcar todas como lidas
+  const handleToggleChat = () => {
+    if (!isChatOpen) {
+      // Abrindo o chat
+      setIsChatOpen(true);
+      setLastReadCount(chatMessages.filter(msg => !msg.isOwn).length);
+    } else {
+      // Fechando o chat
+      setIsChatOpen(false);
+    }
+  };
+
   const handleSendMessage = (text: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: text,
-      isOwn: true,
-      time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-    };
-    
-    setMessages([...messages, newMessage]);
+    sendChatMessage(text);
   };
 
   if (callState === 'searching') {
@@ -159,6 +180,8 @@ function RouteComponent() {
               onClose={() => setIsChatOpen(false)}
               messages={messages}
               onSendMessage={handleSendMessage}
+              isTyping={isTyping}
+              onTyping={sendTypingIndicator}
             />
           </div>
 
@@ -169,12 +192,12 @@ function RouteComponent() {
                   variant={isChatOpen ? "default" : "secondary"}
                   size="icon"
                   className="w-12 h-12 rounded-full shadow-lg relative"
-                  onClick={() => setIsChatOpen(!isChatOpen)}
+                  onClick={handleToggleChat}
                 >
                   <MessageCircle className="w-5 h-5" />
-                  {messages.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {messages.length}
+                  {unreadCount > 0 && !isChatOpen && (
+                    <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </Button>

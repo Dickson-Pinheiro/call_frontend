@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, X } from "lucide-react";
@@ -15,10 +15,30 @@ interface ChatPanelProps {
   onClose: () => void;
   messages: Message[];
   onSendMessage: (text: string) => void;
+  isTyping?: boolean;
+  onTyping?: () => void;
 }
 
-export function ChatPanel({ isOpen, onClose, messages, onSendMessage }: ChatPanelProps) {
+export function ChatPanel({ 
+  isOpen, 
+  onClose, 
+  messages, 
+  onSendMessage,
+  isTyping = false,
+  onTyping
+}: ChatPanelProps) {
   const [message, setMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Scroll automático para última mensagem
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,11 +48,29 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage }: ChatPane
     setMessage("");
   };
 
+  // Enviar indicador de digitação
+  const handleTyping = () => {
+    if (!onTyping) return;
+    
+    // Limpar timeout anterior
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Enviar indicador
+    onTyping();
+    
+    // Resetar depois de 1 segundo de inatividade
+    typingTimeoutRef.current = setTimeout(() => {
+      // Indicador será limpo automaticamente pelo servidor
+    }, 1000);
+  };
+
+  if (!isOpen) return null;
+
   return (
     <div 
-      className={`absolute top-0 right-0 h-full w-full md:w-96 bg-card/95 backdrop-blur-xl border-l border-border transform transition-transform duration-300 ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}
+      className="absolute top-0 right-0 h-full w-full md:w-96 bg-card/95 backdrop-blur-xl border-l border-border shadow-2xl z-50 animate-in slide-in-from-right duration-300"
     >
       <div className="flex flex-col h-full">
         {/* Chat header */}
@@ -64,6 +102,21 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage }: ChatPane
               </div>
             </div>
           ))}
+          
+          {/* Indicador de digitação */}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-secondary rounded-2xl rounded-bl-sm px-4 py-2">
+                <div className="flex gap-1 items-center">
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
         
         {/* Message input */}
@@ -71,7 +124,10 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage }: ChatPane
           <div className="flex gap-2">
             <Input
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                handleTyping();
+              }}
               placeholder="Digite uma mensagem..."
               className="bg-secondary/50"
             />
