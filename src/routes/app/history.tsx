@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/AppLayout";
 import { requireAuth } from "@/lib/auth";
-import { useCompletedCalls } from "@/services";
+import { useCompletedCalls, useRatings } from "@/services";
 import { Spinner } from "@/components/ui/spinner";
 import { 
   Video, 
@@ -12,9 +12,14 @@ import {
   Clock,
   Filter,
   AlertCircle,
+  MessageSquare,
+  Edit2,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Call } from "@/services";
+import { RatingDialog } from "@/components/RatingDialog";
+import { RatingDisplay } from "@/components/RatingDisplay";
+import { ViewRatingDialog } from "@/components/ViewRatingDialog";
 
 export const Route = createFileRoute('/app/history')({
   beforeLoad: requireAuth,
@@ -24,6 +29,33 @@ export const Route = createFileRoute('/app/history')({
 function RouteComponent() {
   const navigate = useNavigate();
   const { data: calls, isLoading, error } = useCompletedCalls();
+  const { data: ratings } = useRatings();
+  
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [viewRatingDialogOpen, setViewRatingDialogOpen] = useState(false);
+  const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
+  
+  // TODO: Pegar userId do contexto de autenticação quando implementado
+  const currentUserId = 1;
+
+  // Função para abrir dialog de avaliação (criar ou editar)
+  const handleOpenRatingDialog = (callId: number) => {
+    setSelectedCallId(callId);
+    setRatingDialogOpen(true);
+  };
+
+  // Função para abrir dialog de visualização
+  const handleViewRating = (callId: number) => {
+    setSelectedCallId(callId);
+    setViewRatingDialogOpen(true);
+  };
+
+  // Função para buscar rating de uma chamada
+  const getRatingForCall = (callId: number) => {
+    return ratings?.find(r => r.callId === callId && r.raterId === currentUserId);
+  };
+  
+  const selectedRating = selectedCallId ? getRatingForCall(selectedCallId) : undefined;
 
   // Função auxiliar para formatar duração em segundos para MM:SS
   const formatDuration = (seconds: number | null): string => {
@@ -73,12 +105,13 @@ function RouteComponent() {
       return acc;
     }, {} as Record<string, Call[]>);
   }, [calls]);
-
-  // TODO: Implementar avaliação de chamadas quando a API de ratings estiver pronta
-  const handleRate = (id: number, rating: number) => {
-    console.log(`Rating call ${id} with ${rating} stars`);
-    // Aqui será implementado useCreateRating
-  };
+  
+  // Calcular avaliação média
+  const averageRating = useMemo(() => {
+    if (!ratings || ratings.length === 0) return null;
+    const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+    return (sum / ratings.length).toFixed(1);
+  }, [ratings]);
 
   // Estados de loading e erro
   if (isLoading) {
@@ -199,7 +232,7 @@ function RouteComponent() {
           </div>
           <div className="glass rounded-2xl p-4 text-center">
             <Star className="w-6 h-6 text-primary mx-auto mb-2" />
-            <p className="text-2xl font-bold">-</p>
+            <p className="text-2xl font-bold">{averageRating || "-"}</p>
             <p className="text-sm text-muted-foreground">Avaliação média</p>
           </div>
         </div>
@@ -243,20 +276,53 @@ function RouteComponent() {
                           </div>
                         </div>
                         
-                        {/* Rating - TODO: Implementar quando a API de ratings estiver pronta */}
-                        <div className="flex items-center gap-1">
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <button
-                                key={i}
-                                onClick={() => handleRate(call.id, i + 1)}
-                                className="hover:scale-110 transition-transform"
-                                aria-label={`Avaliar com ${i + 1} estrelas`}
+                        {/* Rating */}
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const existingRating = getRatingForCall(call.id);
+                            
+                            if (existingRating) {
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <RatingDisplay rating={existingRating} compact />
+                                  <div className="flex gap-1">
+                                    {existingRating.comment && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => handleViewRating(call.id)}
+                                        title="Ver avaliação completa"
+                                      >
+                                        <MessageSquare className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => handleOpenRatingDialog(call.id)}
+                                      title="Editar avaliação"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1"
+                                onClick={() => handleOpenRatingDialog(call.id)}
                               >
-                                <Star className="w-4 h-4 text-muted-foreground hover:text-primary hover:fill-primary transition-colors" />
-                              </button>
-                            ))}
-                          </div>
+                                <Star className="w-4 h-4" />
+                                Avaliar
+                              </Button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -267,6 +333,30 @@ function RouteComponent() {
           ))}
         </div>
       </div>
+      
+      {/* Rating Dialog - Criar ou Editar */}
+      {selectedCallId && (
+        <RatingDialog
+          open={ratingDialogOpen}
+          onOpenChange={setRatingDialogOpen}
+          callId={selectedCallId}
+          userId={currentUserId}
+          existingRating={selectedRating}
+        />
+      )}
+      
+      {/* View Rating Dialog - Visualizar detalhes */}
+      {selectedRating && (
+        <ViewRatingDialog
+          open={viewRatingDialogOpen}
+          onOpenChange={setViewRatingDialogOpen}
+          rating={selectedRating}
+          onEdit={() => {
+            setViewRatingDialogOpen(false);
+            setRatingDialogOpen(true);
+          }}
+        />
+      )}
       </div>
     </AppLayout>
   );
