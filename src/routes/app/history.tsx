@@ -98,7 +98,10 @@ function RouteComponent() {
   const groupedCalls = useMemo(() => {
     if (!calls) return {};
     
-    return calls.reduce((acc, call) => {
+    // Primeiro, ordenar por ID decrescente
+    const sortedCalls = [...calls].sort((a, b) => b.id - a.id);
+    
+    return sortedCalls.reduce((acc, call) => {
       const dateLabel = formatRelativeDate(call.startedAt);
       if (!acc[dateLabel]) acc[dateLabel] = [];
       acc[dateLabel].push(call);
