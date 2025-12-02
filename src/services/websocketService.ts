@@ -50,8 +50,14 @@ class WebSocketService {
       this.isConnecting = true;
       this.eventHandlers = handlers;
 
+      console.log('🔐 Conectando WebSocket com token:', token ? 'Token presente' : 'Token ausente');
+
+      // URL do WebSocket a partir de variável de ambiente
+      const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:8080/ws';
+      console.log('🌐 URL WebSocket:', wsUrl);
+
       // Criar SockJS socket
-      const socket = new SockJS('http://localhost:8080/ws');
+      const socket = new SockJS(wsUrl);
 
       // Criar cliente STOMP
       this.client = new Client({
@@ -67,7 +73,6 @@ class WebSocketService {
         heartbeatOutgoing: 4000,
       });
 
-      // Callback de conexão
       this.client.onConnect = () => {
         console.log('✅ WebSocket conectado!');
         this.isConnecting = false;
@@ -84,6 +89,21 @@ class WebSocketService {
         
         const error: WebSocketError = {
           error: frame.headers['message'] || 'Erro de conexão',
+        };
+        
+        this.eventHandlers.onError?.(error);
+        reject(new Error(error.error));
+      };
+
+      // Callback de erro do WebSocket (antes do STOMP)
+      this.client.onWebSocketError = (event) => {
+        console.error('❌ Erro WebSocket (SockJS handshake):', event);
+        console.error('💡 Dica: Verifique se o backend Spring Security permite acesso ao endpoint /ws/** sem autenticação');
+        console.error('💡 O erro 403 indica que o handshake SockJS está sendo bloqueado antes do STOMP validar o token');
+        this.isConnecting = false;
+        
+        const error: WebSocketError = {
+          error: 'Falha no handshake WebSocket. Backend pode estar bloqueando conexão inicial.',
         };
         
         this.eventHandlers.onError?.(error);
