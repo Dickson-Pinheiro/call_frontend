@@ -229,9 +229,24 @@ export function CallProvider({ children }: CallProviderProps) {
       console.log('✅ Acesso concedido à mídia');
       localStreamRef.current = stream;
       setLocalStream(stream);
+      
+      console.log('📹 LocalStream configurado:', {
+        id: stream.id,
+        tracks: stream.getTracks().map(t => ({
+          kind: t.kind,
+          enabled: t.enabled,
+          readyState: t.readyState
+        }))
+      });
 
       const pc = new RTCPeerConnection(rtcConfig);
       peerConnectionRef.current = pc;
+      
+      console.log('🔌 PeerConnection criada:', {
+        signalingState: pc.signalingState,
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState
+      });
 
       stream.getTracks().forEach((track) => {
         pc.addTrack(track, stream);
@@ -257,7 +272,11 @@ export function CallProvider({ children }: CallProviderProps) {
             }))
           });
           setRemoteStream(event.streams[0]);
-          setCallState('connected');
+          // Garantir que o estado mude para connected quando receber remote stream
+          setCallState((prevState) => {
+            console.log('🔄 Mudando estado de', prevState, 'para connected (remote stream recebido)');
+            return 'connected';
+          });
         } else {
           console.warn('⚠️ Nenhum stream recebido no evento ontrack');
         }
@@ -279,7 +298,14 @@ export function CallProvider({ children }: CallProviderProps) {
         console.log('ICE Connection State:', pc.iceConnectionState);
         
         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-          setCallState('connected');
+          console.log('🔄 ICE conectado, mudando para estado connected');
+          setCallState((prevState) => {
+            if (prevState !== 'connected') {
+              console.log('✅ Mudando de', prevState, 'para connected (ICE)');
+              return 'connected';
+            }
+            return prevState;
+          });
         } else if (pc.iceConnectionState === 'disconnected') {
           console.warn('⚠️ Conexão ICE desconectada');
         } else if (pc.iceConnectionState === 'failed') {
@@ -292,7 +318,14 @@ export function CallProvider({ children }: CallProviderProps) {
         console.log('Connection State:', pc.connectionState);
         
         if (pc.connectionState === 'connected') {
-          setCallState('connected');
+          console.log('✅ PeerConnection conectada');
+          setCallState((prevState) => {
+            if (prevState !== 'connected') {
+              console.log('✅ Mudando de', prevState, 'para connected (PeerConnection)');
+              return 'connected';
+            }
+            return prevState;
+          });
         } else if (pc.connectionState === 'failed') {
           console.error('❌ Falha na conexão');
           alert('Não foi possível estabelecer a conexão.');
@@ -375,7 +408,10 @@ export function CallProvider({ children }: CallProviderProps) {
         setPeerName(data.peerName);
         setCallState('connecting');
         
-        await initializeWebRTC(data.callId, data.peerId);
+        // Pequeno delay para garantir que o estado seja atualizado antes de inicializar WebRTC
+        setTimeout(async () => {
+          await initializeWebRTC(data.callId, data.peerId);
+        }, 100);
       },
       onWebRTCSignal: async (signal: WebRTCSignal) => {
         console.log('📡 WebRTC Signal recebido:', signal.type);

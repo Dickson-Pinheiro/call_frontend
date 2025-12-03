@@ -47,6 +47,16 @@ function RouteComponent() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Debug: log das mudanças de estado
+  useEffect(() => {
+    console.log('🔍 Call Page - Estado atual:', {
+      callState,
+      hasLocalStream: !!localStream,
+      hasRemoteStream: !!remoteStream,
+      peerName
+    });
+  }, [callState, localStream, remoteStream, peerName]);
+
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
@@ -249,5 +259,21 @@ function RouteComponent() {
     );
   }
 
-  return null;
+  // Fallback para estados inesperados
+  console.warn('⚠️ Estado inesperado na página de call:', callState);
+  return (
+    <AppLayout>
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Carregando...
+          </h2>
+          <p className="text-gray-600">
+            Estado: {callState}
+          </p>
+        </div>
+      </div>
+    </AppLayout>
+  );
 }
