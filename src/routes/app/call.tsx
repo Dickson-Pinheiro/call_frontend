@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChatPanel, type Message } from "@/components/ChatPanel";
 import { AppLayout } from "@/components/AppLayout";
@@ -47,6 +47,19 @@ function RouteComponent() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Callback ref para garantir que o vídeo local seja configurado quando o elemento é montado
+  const setLocalVideoRef = useCallback((element: HTMLVideoElement | null) => {
+    localVideoRef.current = element;
+    
+    if (element && localStream) {
+      console.log('🎥 [Callback Ref] Configurando vídeo local');
+      element.srcObject = localStream;
+      element.play().catch(err => {
+        console.error('❌ Erro ao reproduzir vídeo local:', err);
+      });
+    }
+  }, [localStream]);
+
   // Debug: log das mudanças de estado
   useEffect(() => {
     console.log('🔍 Call Page - Estado atual:', {
@@ -61,6 +74,11 @@ function RouteComponent() {
     if (localVideoRef.current && localStream) {
       console.log('🎥 Atribuindo localStream ao elemento de vídeo local');
       localVideoRef.current.srcObject = localStream;
+      
+      // Forçar play após atribuir o stream
+      localVideoRef.current.play().catch(err => {
+        console.error('❌ Erro ao reproduzir vídeo local:', err);
+      });
     } else {
       console.log('⚠️ Não foi possível atribuir localStream:', {
         hasVideoRef: !!localVideoRef.current,
@@ -68,6 +86,17 @@ function RouteComponent() {
       });
     }
   }, [localStream]);
+  
+  // Garantir que o vídeo local seja exibido quando o estado muda para 'connected'
+  useEffect(() => {
+    if (callState === 'connected' && localVideoRef.current && localStream) {
+      console.log('🎥 Estado conectado: forçando atualização do vídeo local');
+      localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(err => {
+        console.error('❌ Erro ao reproduzir vídeo local:', err);
+      });
+    }
+  }, [callState, localStream]);
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
@@ -200,7 +229,7 @@ function RouteComponent() {
               <div className="w-full h-full bg-black flex items-center justify-center">
                 {localStream && isVideoEnabled ? (
                   <video
-                    ref={localVideoRef}
+                    ref={setLocalVideoRef}
                     autoPlay
                     playsInline
                     muted
