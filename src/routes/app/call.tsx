@@ -46,81 +46,48 @@ function RouteComponent() {
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const hasSetupVideoRef = useRef(false);
 
-  // Debug: log das mudanças de estado
+  // Configurar vídeos apenas uma vez quando os streams estiverem disponíveis
   useEffect(() => {
-    console.log('🔍 Call Page - Estado atual:', {
-      callState,
-      hasLocalStream: !!localStream,
-      hasRemoteStream: !!remoteStream,
-      peerName
-    });
-  }, [callState, localStream, remoteStream, peerName]);
+    // Resetar flag quando estado muda para não-connected
+    if (callState !== 'connected') {
+      hasSetupVideoRef.current = false;
+      return;
+    }
 
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      console.log('🎥 Atribuindo localStream ao elemento de vídeo local');
-      
-      // Usar requestAnimationFrame para garantir que o DOM está pronto
-      requestAnimationFrame(() => {
-        if (localVideoRef.current && localStream) {
-          localVideoRef.current.srcObject = localStream;
-          
-          // Forçar play após atribuir o stream
-          localVideoRef.current.play().catch(err => {
-            console.error('❌ Erro ao reproduzir vídeo local:', err);
-          });
-        }
-      });
-    } else {
-      console.log('⚠️ Não foi possível atribuir localStream:', {
-        hasVideoRef: !!localVideoRef.current,
-        hasLocalStream: !!localStream
-      });
-    }
-  }, [localStream]);
-  
-  // Garantir que o vídeo local seja exibido quando o estado muda para 'connected'
-  useEffect(() => {
-    if (callState === 'connected' && localVideoRef.current && localStream) {
-      console.log('🎥 Estado conectado: forçando atualização do vídeo local');
-      
-      // Usar requestAnimationFrame para garantir que o DOM está pronto
-      requestAnimationFrame(() => {
-        if (localVideoRef.current && localStream) {
-          localVideoRef.current.srcObject = localStream;
-          localVideoRef.current.play().catch(err => {
-            console.error('❌ Erro ao reproduzir vídeo local:', err);
-          });
-        }
-      });
-    }
-  }, [callState, localStream]);
+    // Evitar configurar múltiplas vezes
+    if (hasSetupVideoRef.current) return;
+    hasSetupVideoRef.current = true;
 
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      console.log('🎥 Atribuindo remoteStream ao elemento de vídeo remoto:', {
-        streamId: remoteStream.id,
-        tracks: remoteStream.getTracks().map(t => ({
-          kind: t.kind,
-          enabled: t.enabled,
-          readyState: t.readyState
-        }))
-      });
-      
-      remoteVideoRef.current.srcObject = remoteStream;
-      
-      // Forçar play após atribuir o stream
-      remoteVideoRef.current.play().catch(err => {
-        console.error('❌ Erro ao reproduzir vídeo remoto:', err);
-      });
-    } else {
-      console.log('⚠️ Não foi possível atribuir remoteStream:', {
-        hasVideoRef: !!remoteVideoRef.current,
-        hasRemoteStream: !!remoteStream
-      });
-    }
-  }, [remoteStream]);
+    // Configurar vídeo local
+    const setupLocalVideo = () => {
+      if (localVideoRef.current && localStream) {
+        localVideoRef.current.srcObject = localStream;
+        localVideoRef.current.play().catch(() => {
+          // Silenciar erros de autoplay - navegador pode bloquear
+        });
+      }
+    };
+
+    // Configurar vídeo remoto
+    const setupRemoteVideo = () => {
+      if (remoteVideoRef.current && remoteStream) {
+        remoteVideoRef.current.srcObject = remoteStream;
+        remoteVideoRef.current.play().catch(() => {
+          // Silenciar erros de autoplay
+        });
+      }
+    };
+
+    // Pequeno delay para garantir que DOM está pronto
+    const timeoutId = setTimeout(() => {
+      setupLocalVideo();
+      setupRemoteVideo();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [callState, localStream, remoteStream]);
 
   // Converter ChatMessageUI para Message (formato do ChatPanel)
   const messages: Message[] = chatMessages.map(msg => ({
@@ -190,13 +157,6 @@ function RouteComponent() {
   }
 
   if (callState === 'connected') {
-    console.log('🎬 Renderizando página de chamada conectada:', {
-      hasRemoteStream: !!remoteStream,
-      hasLocalStream: !!localStream,
-      remoteStreamTracks: remoteStream?.getTracks().length,
-      localStreamTracks: localStream?.getTracks().length
-    });
-    
     return (
       <AppLayout>
         <div className="flex flex-col bg-background relative overflow-hidden -mx-4 -my-8" style={{ minHeight: 'calc(100vh - 4rem)' }}>
@@ -208,9 +168,6 @@ function RouteComponent() {
                   autoPlay
                   playsInline
                   className="w-full h-full object-cover"
-                  onLoadedMetadata={() => console.log('✅ Vídeo remoto: metadata carregada')}
-                  onCanPlay={() => console.log('✅ Vídeo remoto: pode reproduzir')}
-                  onError={(e) => console.error('❌ Erro no vídeo remoto:', e)}
                 />
               ) : (
                 <div className="text-center text-white">
@@ -234,8 +191,6 @@ function RouteComponent() {
                     playsInline
                     muted
                     className="w-full h-full object-cover"
-                    onLoadedMetadata={() => console.log('✅ Vídeo local: metadata carregada')}
-                    onCanPlay={() => console.log('✅ Vídeo local: pode reproduzir')}
                   />
                 ) : (
                   <VideoOff className="w-8 h-8 text-white" />
@@ -324,19 +279,26 @@ function RouteComponent() {
     );
   }
 
-  // Fallback para estados inesperados
-  console.warn('⚠️ Estado inesperado na página de call:', callState);
+  // Fallback para estados inesperados - redirecionar para dashboard
+  if (callState === 'idle') {
+    return (
+      <AppLayout>
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-gray-600">Redirecionando...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Estado desconhecido
   return (
     <AppLayout>
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Carregando...
-          </h2>
-          <p className="text-gray-600">
-            Estado: {callState}
-          </p>
+          <p className="text-gray-600">Estado: {callState}</p>
         </div>
       </div>
     </AppLayout>
