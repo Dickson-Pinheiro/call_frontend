@@ -67,6 +67,8 @@ export function CallProvider({ children }: CallProviderProps) {
   // Refs
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const makingOfferRef = useRef(false);
+  const ignoreOfferRef = useRef(false);
 
   // Configuração ICE servers
   const rtcConfig: RTCConfiguration = {
@@ -142,6 +144,21 @@ export function CallProvider({ children }: CallProviderProps) {
     try {
       if (signal.type === 'offer') {
         console.log('📥 Processando offer');
+        
+        // Perfect Negotiation: Se estamos criando uma offer, ignorar a recebida
+        const offerCollision = (signal.type === 'offer') &&
+                              (makingOfferRef.current || pc.signalingState !== 'stable');
+        
+        // Determinar quem é "polite" (userId menor aguarda)
+        const currentUserId = getUserId();
+        const isPolite = currentUserId !== null && peerId !== null && currentUserId < peerId;
+        
+        ignoreOfferRef.current = !isPolite && offerCollision;
+        if (ignoreOfferRef.current) {
+          console.log('⚠️ Ignorando offer (collision, somos impolite)');
+          return;
+        }
+        
         await pc.setRemoteDescription(new RTCSessionDescription(signal.data as RTCSessionDescriptionInit));
         console.log('✅ RemoteDescription (offer) configurada');
         
@@ -162,8 +179,14 @@ export function CallProvider({ children }: CallProviderProps) {
         console.log('✅ RemoteDescription (answer) configurada');
       } else if (signal.type === 'ice-candidate') {
         console.log('🧊 Adicionando ICE candidate');
-        await pc.addIceCandidate(new RTCIceCandidate(signal.data as RTCIceCandidateInit));
-        console.log('✅ ICE candidate adicionado');
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(signal.data as RTCIceCandidateInit));
+          console.log('✅ ICE candidate adicionado');
+        } catch (err) {
+          if (!ignoreOfferRef.current) {
+            console.error('❌ Erro ao adicionar ICE candidate:', err);
+          }
+        }
       }
       
       console.log('📊 Estado após processamento:', {
@@ -191,8 +214,16 @@ export function CallProvider({ children }: CallProviderProps) {
       console.log('📹 Solicitando acesso à câmera e microfone...');
       
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user'
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
       });
 
       console.log('✅ Acesso concedido à mídia');
@@ -247,23 +278,59 @@ export function CallProvider({ children }: CallProviderProps) {
       pc.oniceconnectionstatechange = () => {
         console.log('ICE Connection State:', pc.iceConnectionState);
         
-        if (pc.iceConnectionState === 'connected') {
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
           setCallState('connected');
-        } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-          console.warn('Conexão perdida');
+        } else if (pc.iceConnectionState === 'disconnected') {
+          console.warn('⚠️ Conexão ICE desconectada');
+        } else if (pc.iceConnectionState === 'failed') {
+          console.error('❌ Falha na conexão ICE');
+          alert('Falha na conexão. Tentando reconectar...');
         }
       };
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+      pc.onconnectionstatechange = () => {
+        console.log('Connection State:', pc.connectionState);
+        
+        if (pc.connectionState === 'connected') {
+          setCallState('connected');
+        } else if (pc.connectionState === 'failed') {
+          console.error('❌ Falha na conexão');
+          alert('Não foi possível estabelecer a conexão.');
+        }
+      };
 
-      console.log('📤 Enviando offer');
-      sendWebRTCSignal({
-        type: 'offer',
-        callId,
-        targetUserId: targetPeerId,
-        data: offer,
+      // Perfect Negotiation: apenas o peer "impolite" (userId maior) cria a offer inicial
+      const currentUserId = getUserId();
+      const shouldCreateOffer = currentUserId !== null && currentUserId > targetPeerId;
+      
+      console.log('🎯 Estratégia de negociação:', {
+        currentUserId,
+        targetPeerId,
+        shouldCreateOffer,
+        role: shouldCreateOffer ? 'impolite (cria offer)' : 'polite (aguarda offer)'
       });
+
+      if (shouldCreateOffer) {
+        console.log('📤 Criando e enviando offer (somos impolite)');
+        makingOfferRef.current = true;
+        
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+
+          console.log('📤 Enviando offer');
+          sendWebRTCSignal({
+            type: 'offer',
+            callId,
+            targetUserId: targetPeerId,
+            data: offer,
+          });
+        } finally {
+          makingOfferRef.current = false;
+        }
+      } else {
+        console.log('⏳ Aguardando offer do peer (somos polite)');
+      }
     } catch (error) {
       console.error('❌ Erro ao inicializar WebRTC:', error);
       
