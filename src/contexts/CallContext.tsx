@@ -553,7 +553,7 @@ export function CallProvider({ children }: CallProviderProps) {
             iceGatheringState: pc.iceGatheringState
           });
 
-          console.log('� Enviando offer via WebSocket...');
+          console.log('📡 Enviando offer via WebSocket...');
           sendWebRTCSignal({
             type: 'offer',
             callId,
@@ -561,6 +561,22 @@ export function CallProvider({ children }: CallProviderProps) {
             data: offer,
           });
           console.log('✅ Offer enviada com sucesso');
+          
+          // Adicionar timeout para detectar se a answer não chega
+          setTimeout(() => {
+            if (pc.signalingState === 'have-local-offer') {
+              console.error('❌ PROBLEMA: Offer foi enviada mas answer não chegou!');
+              console.error('📊 Estado atual:', {
+                signalingState: pc.signalingState,
+                iceConnectionState: pc.iceConnectionState,
+                connectionState: pc.connectionState
+              });
+              console.error('🔍 Possíveis causas:');
+              console.error('  1. Backend não está encaminhando o sinal WebRTC');
+              console.error('  2. Peer remoto não está recebendo a offer');
+              console.error('  3. Subscription /user/queue/webrtc-signal não está funcionando');
+            }
+          }, 8000);
         } catch (offerError) {
           console.error('❌ Erro ao criar/enviar offer:', offerError);
           throw offerError;
@@ -574,6 +590,24 @@ export function CallProvider({ children }: CallProviderProps) {
           connectionState: pc.connectionState,
           iceConnectionState: pc.iceConnectionState
         });
+        
+        // Adicionar timeout para detectar se a offer não chega
+        setTimeout(() => {
+          if (pc.signalingState === 'stable' && !pc.remoteDescription) {
+            console.error('❌ PROBLEMA: Esperando offer mas ela não chegou!');
+            console.error('📊 Estado atual:', {
+              signalingState: pc.signalingState,
+              iceConnectionState: pc.iceConnectionState,
+              connectionState: pc.connectionState,
+              hasRemoteDescription: !!pc.remoteDescription
+            });
+            console.error('🔍 Possíveis causas:');
+            console.error('  1. Peer remoto (impolite) não enviou a offer');
+            console.error('  2. Backend não está encaminhando o sinal WebRTC');
+            console.error('  3. Subscription /user/queue/webrtc-signal não está funcionando');
+            console.error('  4. Match duplicado causou confusão no pareamento');
+          }
+        }, 8000);
       }
       
       // Timeout de segurança: se após 10 segundos ainda não conectou, forçar conexão
@@ -660,6 +694,19 @@ export function CallProvider({ children }: CallProviderProps) {
       },
       onMatchFound: async (data: MatchFound) => {
         console.log('🎯 Match encontrado:', data);
+        
+        // Prevenir match duplicado
+        if (peerConnectionRef.current) {
+          console.warn('⚠️ Match ignorado: já existe uma PeerConnection ativa');
+          return;
+        }
+        
+        if (currentCallId && currentCallId === data.callId) {
+          console.warn('⚠️ Match duplicado ignorado: callId já está ativo');
+          return;
+        }
+        
+        console.log('✅ Processando match válido');
         setCurrentCallId(data.callId);
         setPeerId(data.peerId);
         setPeerName(data.peerName);
@@ -671,7 +718,12 @@ export function CallProvider({ children }: CallProviderProps) {
         }, 100);
       },
       onWebRTCSignal: async (signal: WebRTCSignal) => {
-        console.log('📡 WebRTC Signal recebido:', signal.type);
+        console.log('📡 WebRTC Signal recebido via WebSocket:', {
+          type: signal.type,
+          callId: signal.callId,
+          senderId: signal.senderId,
+          hasPeerConnection: !!peerConnectionRef.current
+        });
         await handleWebRTCSignal(signal);
       },
       onChatMessage: (data) => {
@@ -744,7 +796,7 @@ export function CallProvider({ children }: CallProviderProps) {
         alert(error.error);
       },
     });
-  }, [updateHandlers, navigate, cleanupCall, handleWebRTCSignal, initializeWebRTC]);
+  }, [updateHandlers, navigate, cleanupCall, handleWebRTCSignal, initializeWebRTC, currentCallId]);
 
   // Iniciar busca
   const startSearching = useCallback(async () => {
