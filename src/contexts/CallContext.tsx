@@ -154,8 +154,21 @@ export function CallProvider({ children }: CallProviderProps) {
         console.log('📊 Estado ANTES de processar offer:', {
           signalingState: pc.signalingState,
           connectionState: pc.connectionState,
-          iceConnectionState: pc.iceConnectionState
+          iceConnectionState: pc.iceConnectionState,
+          hasRemoteDescription: !!pc.remoteDescription
         });
+        
+        // 🛡️ PROTEÇÃO: Se já temos remoteDescription, ignorar offers duplicadas
+        if (pc.remoteDescription) {
+          console.warn('⚠️ Ignorando offer duplicada - remoteDescription já configurada');
+          return;
+        }
+        
+        // 🛡️ PROTEÇÃO: Se já processamos answer (signaling stable), ignorar offers
+        if (pc.signalingState === 'stable' && pc.remoteDescription) {
+          console.warn('⚠️ Ignorando offer duplicada - negociação já concluída');
+          return;
+        }
         
         // Perfect Negotiation: Se estamos criando uma offer, ignorar a recebida
         const offerCollision = (signal.type === 'offer') &&
@@ -211,8 +224,22 @@ export function CallProvider({ children }: CallProviderProps) {
         console.log('📊 Estado ANTES de processar answer:', {
           signalingState: pc.signalingState,
           connectionState: pc.connectionState,
-          iceConnectionState: pc.iceConnectionState
+          iceConnectionState: pc.iceConnectionState,
+          hasRemoteDescription: !!pc.remoteDescription
         });
+        
+        // 🛡️ PROTEÇÃO: Se já temos remoteDescription, ignorar answers duplicados
+        if (pc.remoteDescription) {
+          console.warn('⚠️ Ignorando answer duplicado - remoteDescription já configurada');
+          return;
+        }
+        
+        // 🛡️ PROTEÇÃO: Se não estamos esperando answer, ignorar
+        if (pc.signalingState !== 'have-local-offer') {
+          console.warn('⚠️ Ignorando answer - não estamos esperando (signalingState:', pc.signalingState, ')');
+          return;
+        }
+        
         await pc.setRemoteDescription(new RTCSessionDescription(signal.data as RTCSessionDescriptionInit));
         console.log('✅ RemoteDescription (answer) configurada com sucesso');
         console.log('📊 Estado DEPOIS de processar answer:', {
@@ -499,6 +526,12 @@ export function CallProvider({ children }: CallProviderProps) {
         } else if (pc.connectionState === 'disconnected') {
           console.warn('⚠️ PeerConnection desconectada');
         } else if (pc.connectionState === 'failed') {
+          // 🛡️ PROTEÇÃO: Se ICE está connected/completed, NÃO considerar como falha
+          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+            console.warn('⚠️ Connection State = failed, mas ICE está conectado - ignorando falha espúria');
+            return;
+          }
+          
           console.error('❌ PeerConnection falhou:', {
             iceConnectionState: pc.iceConnectionState,
             signalingState: pc.signalingState,
