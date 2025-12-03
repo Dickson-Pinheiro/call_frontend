@@ -143,15 +143,32 @@ export function CallProvider({ children }: CallProviderProps) {
 
     try {
       if (signal.type === 'offer') {
-        console.log('📥 Processando offer');
+        console.log('📥 Offer recebida!');
+        console.log('📊 Estado ANTES de processar offer:', {
+          signalingState: pc.signalingState,
+          connectionState: pc.connectionState,
+          iceConnectionState: pc.iceConnectionState
+        });
         
         // Perfect Negotiation: Se estamos criando uma offer, ignorar a recebida
         const offerCollision = (signal.type === 'offer') &&
                               (makingOfferRef.current || pc.signalingState !== 'stable');
         
+        console.log('🔍 Verificando colisão:', {
+          makingOffer: makingOfferRef.current,
+          signalingState: pc.signalingState,
+          hasCollision: offerCollision
+        });
+        
         // Determinar quem é "polite" (userId menor aguarda)
         const currentUserId = getUserId();
         const isPolite = currentUserId !== null && peerId !== null && currentUserId < peerId;
+        
+        console.log('🎭 Papel na negociação:', {
+          currentUserId,
+          peerId,
+          isPolite: isPolite ? 'SIM (aceita collision)' : 'NÃO (rejeita collision)'
+        });
         
         ignoreOfferRef.current = !isPolite && offerCollision;
         if (ignoreOfferRef.current) {
@@ -159,24 +176,43 @@ export function CallProvider({ children }: CallProviderProps) {
           return;
         }
         
+        console.log('✅ Processando offer...');
         await pc.setRemoteDescription(new RTCSessionDescription(signal.data as RTCSessionDescriptionInit));
         console.log('✅ RemoteDescription (offer) configurada');
         
+        console.log('🔨 Criando answer...');
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         console.log('✅ LocalDescription (answer) configurada');
 
-        console.log('📤 Enviando answer');
+        console.log('📤 Enviando answer via WebSocket...');
         sendWebRTCSignal({
           type: 'answer',
           callId: currentCallId!,
           targetUserId: peerId!,
           data: answer,
         });
+        console.log('✅ Answer enviado com sucesso');
+        
+        console.log('📊 Estado DEPOIS de processar offer:', {
+          signalingState: pc.signalingState,
+          connectionState: pc.connectionState,
+          iceConnectionState: pc.iceConnectionState
+        });
       } else if (signal.type === 'answer') {
-        console.log('📥 Processando answer');
+        console.log('📥 Processando answer recebido');
+        console.log('📊 Estado ANTES de processar answer:', {
+          signalingState: pc.signalingState,
+          connectionState: pc.connectionState,
+          iceConnectionState: pc.iceConnectionState
+        });
         await pc.setRemoteDescription(new RTCSessionDescription(signal.data as RTCSessionDescriptionInit));
-        console.log('✅ RemoteDescription (answer) configurada');
+        console.log('✅ RemoteDescription (answer) configurada com sucesso');
+        console.log('📊 Estado DEPOIS de processar answer:', {
+          signalingState: pc.signalingState,
+          connectionState: pc.connectionState,
+          iceConnectionState: pc.iceConnectionState
+        });
       } else if (signal.type === 'ice-candidate') {
         console.log('🧊 Adicionando ICE candidate');
         try {
@@ -249,8 +285,15 @@ export function CallProvider({ children }: CallProviderProps) {
       });
 
       stream.getTracks().forEach((track) => {
+        console.log('➕ Adicionando track local:', {
+          kind: track.kind,
+          enabled: track.enabled,
+          id: track.id
+        });
         pc.addTrack(track, stream);
       });
+      
+      console.log('✅ Todos os tracks locais adicionados ao PeerConnection');
 
       pc.ontrack = (event) => {
         console.log('📹 Remote track recebido:', {
@@ -282,23 +325,77 @@ export function CallProvider({ children }: CallProviderProps) {
         }
       };
 
+      pc.onsignalingstatechange = () => {
+        console.log('🔄 Signaling State mudou:', pc.signalingState);
+        
+        // Quando signaling state volta para 'stable', a negociação foi concluída
+        if (pc.signalingState === 'stable') {
+          console.log('✅ Signaling State é stable - negociação concluída');
+          
+          // Se já temos remote description, podemos considerar a conexão estabelecida
+          if (pc.remoteDescription) {
+            console.log('📡 Remote description presente, verificando se devemos conectar...');
+            
+            // Dar um pequeno delay para ICE candidates serem trocados
+            setTimeout(() => {
+              const currentIceState = pc.iceConnectionState;
+              const currentConnState = pc.connectionState;
+              
+              console.log('🔍 Verificação após signaling stable:', {
+                iceConnectionState: currentIceState,
+                connectionState: currentConnState,
+                hasRemoteDescription: !!pc.remoteDescription
+              });
+              
+              // Se ICE está em um estado que pode funcionar, conectar
+              if (currentIceState === 'checking' || 
+                  currentIceState === 'connected' || 
+                  currentIceState === 'completed') {
+                console.log('✅ ICE em estado válido, garantindo transição para connected');
+                setCallState((prevState) => {
+                  if (prevState === 'connecting') {
+                    console.log('🎯 Mudando de connecting para connected (signaling stable + ICE válido)');
+                    return 'connected';
+                  }
+                  return prevState;
+                });
+              }
+            }, 1000);
+          }
+        }
+      };
+
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log('🧊 Enviando ICE candidate');
+          console.log('🧊 ICE candidate gerado:', {
+            candidate: event.candidate.candidate,
+            type: event.candidate.type,
+            protocol: event.candidate.protocol
+          });
+          console.log('📤 Enviando ICE candidate');
           sendWebRTCSignal({
             type: 'ice-candidate',
             callId,
             targetUserId: targetPeerId,
             data: event.candidate.toJSON(),
           });
+        } else {
+          console.log('✅ Todos os ICE candidates foram enviados (candidate=null)');
         }
       };
 
+      pc.onicegatheringstatechange = () => {
+        console.log('🧊 ICE Gathering State:', pc.iceGatheringState);
+      };
+
       pc.oniceconnectionstatechange = () => {
-        console.log('ICE Connection State:', pc.iceConnectionState);
+        console.log('🔌 ICE Connection State mudou:', pc.iceConnectionState, {
+          connectionState: pc.connectionState,
+          signalingState: pc.signalingState
+        });
         
         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-          console.log('🔄 ICE conectado, mudando para estado connected');
+          console.log('🎉 ICE conectado com sucesso! Mudando para estado connected');
           setCallState((prevState) => {
             if (prevState !== 'connected') {
               console.log('✅ Mudando de', prevState, 'para connected (ICE)');
@@ -306,6 +403,22 @@ export function CallProvider({ children }: CallProviderProps) {
             }
             return prevState;
           });
+        } else if (pc.iceConnectionState === 'checking') {
+          console.log('🔍 ICE está verificando conectividade...');
+          
+          // Se ICE está checking por muito tempo (5s) e signaling está stable, conectar
+          setTimeout(() => {
+            if (pc.iceConnectionState === 'checking' && pc.signalingState === 'stable') {
+              console.log('⚠️ ICE ainda em checking após 5s, mas signaling stable - conectando mesmo assim');
+              setCallState((prevState) => {
+                if (prevState === 'connecting') {
+                  console.log('🔧 Mudando para connected (ICE checking + signaling stable)');
+                  return 'connected';
+                }
+                return prevState;
+              });
+            }
+          }, 5000);
         } else if (pc.iceConnectionState === 'disconnected') {
           console.warn('⚠️ Conexão ICE desconectada');
         } else if (pc.iceConnectionState === 'failed') {
@@ -344,26 +457,92 @@ export function CallProvider({ children }: CallProviderProps) {
       });
 
       if (shouldCreateOffer) {
-        console.log('📤 Criando e enviando offer (somos impolite)');
+        console.log('📤 Iniciando criação de offer (somos impolite)');
         makingOfferRef.current = true;
         
         try {
+          console.log('🔨 Criando offer...');
           const offer = await pc.createOffer();
+          console.log('✅ Offer criada:', {
+            type: offer.type,
+            sdp: offer.sdp?.substring(0, 100) + '...'
+          });
+          
+          console.log('📝 Configurando LocalDescription...');
           await pc.setLocalDescription(offer);
+          console.log('✅ LocalDescription configurada:', {
+            signalingState: pc.signalingState,
+            iceGatheringState: pc.iceGatheringState
+          });
 
-          console.log('📤 Enviando offer');
+          console.log('� Enviando offer via WebSocket...');
           sendWebRTCSignal({
             type: 'offer',
             callId,
             targetUserId: targetPeerId,
             data: offer,
           });
+          console.log('✅ Offer enviada com sucesso');
+        } catch (offerError) {
+          console.error('❌ Erro ao criar/enviar offer:', offerError);
+          throw offerError;
         } finally {
           makingOfferRef.current = false;
         }
       } else {
         console.log('⏳ Aguardando offer do peer (somos polite)');
+        console.log('📊 Estado atual do PeerConnection:', {
+          signalingState: pc.signalingState,
+          connectionState: pc.connectionState,
+          iceConnectionState: pc.iceConnectionState
+        });
       }
+      
+      // Timeout de segurança: se após 10 segundos ainda não conectou, forçar conexão
+      // se a negociação foi completada (signaling stable)
+      const connectionTimeout = setTimeout(() => {
+        console.log('⏰ Timeout de segurança: verificando estado da conexão...');
+        
+        const currentState = {
+          callState: callState,
+          signalingState: pc.signalingState,
+          iceConnectionState: pc.iceConnectionState,
+          connectionState: pc.connectionState,
+          hasRemoteDescription: !!pc.remoteDescription,
+          hasLocalDescription: !!pc.localDescription
+        };
+        
+        console.log('📊 Estado após 10s:', currentState);
+        
+        // Se a negociação foi completada mas ainda está em 'connecting'
+        if (pc.signalingState === 'stable' && pc.remoteDescription && pc.localDescription) {
+          console.log('⚠️ Negociação completa mas ainda em connecting - forçando transição');
+          setCallState((prevState) => {
+            if (prevState === 'connecting') {
+              console.log('🔧 Forçando mudança para connected (timeout de segurança)');
+              return 'connected';
+            }
+            return prevState;
+          });
+        } else {
+          console.log('ℹ️ Ainda aguardando negociação completar:', {
+            needsOffer: !pc.localDescription && !pc.remoteDescription,
+            needsAnswer: !!pc.localDescription && !pc.remoteDescription
+          });
+        }
+      }, 10000);
+      
+      // Limpar timeout se a conexão for estabelecida
+      const cleanupTimeout = () => {
+        clearTimeout(connectionTimeout);
+      };
+      
+      // Registrar cleanup
+      pc.addEventListener('connectionstatechange', () => {
+        if (pc.connectionState === 'connected') {
+          cleanupTimeout();
+        }
+      });
     } catch (error) {
       console.error('❌ Erro ao inicializar WebRTC:', error);
       
