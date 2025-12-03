@@ -56,6 +56,7 @@ export const useLogout = (options?: UseLogoutOptions) => {
 
   const defaultOnSuccess = () => {
     queryClient.clear();
+    localStorage.clear();
     navigate({ to: '/' });
   };
 

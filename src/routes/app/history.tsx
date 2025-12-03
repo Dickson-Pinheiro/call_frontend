@@ -34,30 +34,25 @@ function RouteComponent() {
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [viewRatingDialogOpen, setViewRatingDialogOpen] = useState(false);
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
-  
-  // TODO: Pegar userId do contexto de autenticação quando implementado
+
   const currentUserId = 1;
 
-  // Função para abrir dialog de avaliação (criar ou editar)
   const handleOpenRatingDialog = (callId: number) => {
     setSelectedCallId(callId);
     setRatingDialogOpen(true);
   };
 
-  // Função para abrir dialog de visualização
   const handleViewRating = (callId: number) => {
     setSelectedCallId(callId);
     setViewRatingDialogOpen(true);
   };
 
-  // Função para buscar rating de uma chamada
   const getRatingForCall = (callId: number) => {
     return ratings?.find(r => r.callId === callId && r.raterId === currentUserId);
   };
   
   const selectedRating = selectedCallId ? getRatingForCall(selectedCallId) : undefined;
 
-  // Função auxiliar para formatar duração em segundos para MM:SS
   const formatDuration = (seconds: number | null): string => {
     if (!seconds) return "0:00";
     const mins = Math.floor(seconds / 60);
@@ -65,7 +60,6 @@ function RouteComponent() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Função para formatar data relativa
   const formatRelativeDate = (dateStr: string): string => {
     const date = new Date(dateStr);
     const today = new Date();
@@ -81,24 +75,18 @@ function RouteComponent() {
     }
   };
 
-  // Função para obter hora da chamada
   const formatTime = (dateStr: string): string => {
     const date = new Date(dateStr);
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Função para obter o nome do outro participante
   const getOtherParticipantName = (call: Call, currentUserId: number): string => {
-    // TODO: pegar o ID do usuário atual do contexto de autenticação
-    // Por enquanto, vamos usar user2Name como padrão
     return call.user1Id === currentUserId ? call.user2Name : call.user1Name;
   };
 
-  // Agrupar chamadas por data
   const groupedCalls = useMemo(() => {
     if (!calls) return {};
     
-    // Primeiro, ordenar por ID decrescente
     const sortedCalls = [...calls].sort((a, b) => b.id - a.id);
     
     return sortedCalls.reduce((acc, call) => {
