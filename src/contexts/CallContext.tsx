@@ -73,9 +73,16 @@ export function CallProvider({ children }: CallProviderProps) {
   // Configuração ICE servers
   const rtcConfig: RTCConfiguration = {
     iceServers: [
+      // Google STUN servers
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
     ],
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require',
   };
 
   // WebSocket
@@ -306,15 +313,24 @@ export function CallProvider({ children }: CallProviderProps) {
         });
         
         if (event.streams && event.streams[0]) {
+          const stream = event.streams[0];
           console.log('✅ Configurando remoteStream:', {
-            streamId: event.streams[0].id,
-            tracks: event.streams[0].getTracks().map(t => ({
+            streamId: stream.id,
+            tracks: stream.getTracks().map(t => ({
               kind: t.kind,
               enabled: t.enabled,
-              readyState: t.readyState
-            }))
+              readyState: t.readyState,
+              id: t.id
+            })),
+            trackCount: stream.getTracks().length
           });
-          setRemoteStream(event.streams[0]);
+          
+          // Importante: Sempre atualizar o remoteStream quando receber um novo track
+          // pois o stream pode ser recebido em partes (primeiro vídeo, depois áudio ou vice-versa)
+          setRemoteStream(stream);
+          
+          console.log('✅ RemoteStream atualizado no estado');
+          
           // Garantir que o estado mude para connected quando receber remote stream
           setCallState((prevState) => {
             console.log('🔄 Mudando estado de', prevState, 'para connected (remote stream recebido)');
@@ -367,12 +383,25 @@ export function CallProvider({ children }: CallProviderProps) {
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
+          const candidate = event.candidate;
+          const candidateStr = candidate.candidate;
+          
+          // Extrair tipo de candidate (host, srflx, relay)
+          let candidateType = 'unknown';
+          if (candidateStr.includes('typ host')) candidateType = 'host';
+          else if (candidateStr.includes('typ srflx')) candidateType = 'srflx (STUN)';
+          else if (candidateStr.includes('typ relay')) candidateType = 'relay (TURN)';
+          
           console.log('🧊 ICE candidate gerado:', {
-            candidate: event.candidate.candidate,
-            type: event.candidate.type,
-            protocol: event.candidate.protocol
+            type: candidateType,
+            protocol: candidate.protocol,
+            address: candidate.address,
+            port: candidate.port,
+            priority: candidate.priority,
+            candidateString: candidateStr.substring(0, 80) + '...'
           });
-          console.log('📤 Enviando ICE candidate');
+          
+          console.log('📤 Enviando ICE candidate para peer');
           sendWebRTCSignal({
             type: 'ice-candidate',
             callId,
@@ -380,12 +409,18 @@ export function CallProvider({ children }: CallProviderProps) {
             data: event.candidate.toJSON(),
           });
         } else {
-          console.log('✅ Todos os ICE candidates foram enviados (candidate=null)');
+          console.log('✅ Coleta de ICE candidates concluída (candidate=null)');
         }
       };
 
       pc.onicegatheringstatechange = () => {
-        console.log('🧊 ICE Gathering State:', pc.iceGatheringState);
+        console.log('🧊 ICE Gathering State mudou:', pc.iceGatheringState);
+        
+        if (pc.iceGatheringState === 'complete') {
+          console.log('✅ Coleta de ICE candidates completa');
+        } else if (pc.iceGatheringState === 'gathering') {
+          console.log('🔍 Coletando ICE candidates...');
+        }
       };
 
       pc.oniceconnectionstatechange = () => {
@@ -420,18 +455,38 @@ export function CallProvider({ children }: CallProviderProps) {
             }
           }, 5000);
         } else if (pc.iceConnectionState === 'disconnected') {
-          console.warn('⚠️ Conexão ICE desconectada');
+          console.warn('⚠️ Conexão ICE desconectada - aguardando reconexão automática...');
         } else if (pc.iceConnectionState === 'failed') {
-          console.error('❌ Falha na conexão ICE');
-          alert('Falha na conexão. Tentando reconectar...');
+          console.error('❌ Falha na conexão ICE:', {
+            connectionState: pc.connectionState,
+            signalingState: pc.signalingState,
+            iceGatheringState: pc.iceGatheringState,
+            localDescription: !!pc.localDescription,
+            remoteDescription: !!pc.remoteDescription
+          });
+          
+          // Tentar restart ICE antes de desistir
+          console.log('🔄 Tentando restart ICE...');
+          pc.restartIce();
+          
+          // Se falhar novamente após 5 segundos, mostrar erro
+          setTimeout(() => {
+            if (pc.iceConnectionState === 'failed') {
+              console.error('❌ ICE continua falhando após restart');
+              alert('Falha na conexão ICE. Verifique sua conexão de internet ou firewall.');
+            }
+          }, 5000);
         }
       };
 
       pc.onconnectionstatechange = () => {
-        console.log('Connection State:', pc.connectionState);
+        console.log('🔌 Connection State mudou:', pc.connectionState, {
+          iceConnectionState: pc.iceConnectionState,
+          signalingState: pc.signalingState
+        });
         
         if (pc.connectionState === 'connected') {
-          console.log('✅ PeerConnection conectada');
+          console.log('✅ PeerConnection conectada com sucesso!');
           setCallState((prevState) => {
             if (prevState !== 'connected') {
               console.log('✅ Mudando de', prevState, 'para connected (PeerConnection)');
@@ -439,9 +494,32 @@ export function CallProvider({ children }: CallProviderProps) {
             }
             return prevState;
           });
+        } else if (pc.connectionState === 'connecting') {
+          console.log('🔄 PeerConnection conectando...');
+        } else if (pc.connectionState === 'disconnected') {
+          console.warn('⚠️ PeerConnection desconectada');
         } else if (pc.connectionState === 'failed') {
-          console.error('❌ Falha na conexão');
-          alert('Não foi possível estabelecer a conexão.');
+          console.error('❌ PeerConnection falhou:', {
+            iceConnectionState: pc.iceConnectionState,
+            signalingState: pc.signalingState,
+            iceGatheringState: pc.iceGatheringState,
+            localDescription: !!pc.localDescription,
+            remoteDescription: !!pc.remoteDescription
+          });
+          
+          // Não mostrar alert imediatamente, aguardar para ver se ICE restart resolve
+          console.log('⏳ Aguardando possível recuperação...');
+          
+          setTimeout(() => {
+            if (pc.connectionState === 'failed') {
+              console.error('❌ Conexão continua falhando');
+              alert('Não foi possível estabelecer a conexão. Possíveis causas:\n\n' +
+                    '• Problemas de rede\n' +
+                    '• Firewall bloqueando WebRTC\n' +
+                    '• NAT restritivo\n\n' +
+                    'Tente reconectar ou usar outra rede.');
+            }
+          }, 3000);
         }
       };
 

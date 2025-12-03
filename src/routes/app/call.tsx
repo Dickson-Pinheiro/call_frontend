@@ -59,13 +59,37 @@ function RouteComponent() {
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
+      console.log('🎥 Atribuindo localStream ao elemento de vídeo local');
       localVideoRef.current.srcObject = localStream;
+    } else {
+      console.log('⚠️ Não foi possível atribuir localStream:', {
+        hasVideoRef: !!localVideoRef.current,
+        hasLocalStream: !!localStream
+      });
     }
   }, [localStream]);
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
+      console.log('🎥 Atribuindo remoteStream ao elemento de vídeo remoto:', {
+        streamId: remoteStream.id,
+        tracks: remoteStream.getTracks().map(t => ({
+          kind: t.kind,
+          enabled: t.enabled,
+          readyState: t.readyState
+        }))
+      });
       remoteVideoRef.current.srcObject = remoteStream;
+      
+      // Forçar play após atribuir o stream
+      remoteVideoRef.current.play().catch(err => {
+        console.error('❌ Erro ao reproduzir vídeo remoto:', err);
+      });
+    } else {
+      console.log('⚠️ Não foi possível atribuir remoteStream:', {
+        hasVideoRef: !!remoteVideoRef.current,
+        hasRemoteStream: !!remoteStream
+      });
     }
   }, [remoteStream]);
 
@@ -137,6 +161,13 @@ function RouteComponent() {
   }
 
   if (callState === 'connected') {
+    console.log('🎬 Renderizando página de chamada conectada:', {
+      hasRemoteStream: !!remoteStream,
+      hasLocalStream: !!localStream,
+      remoteStreamTracks: remoteStream?.getTracks().length,
+      localStreamTracks: localStream?.getTracks().length
+    });
+    
     return (
       <AppLayout>
         <div className="flex flex-col bg-background relative overflow-hidden -mx-4 -my-8" style={{ minHeight: 'calc(100vh - 4rem)' }}>
@@ -148,6 +179,9 @@ function RouteComponent() {
                   autoPlay
                   playsInline
                   className="w-full h-full object-cover"
+                  onLoadedMetadata={() => console.log('✅ Vídeo remoto: metadata carregada')}
+                  onCanPlay={() => console.log('✅ Vídeo remoto: pode reproduzir')}
+                  onError={(e) => console.error('❌ Erro no vídeo remoto:', e)}
                 />
               ) : (
                 <div className="text-center text-white">
@@ -171,6 +205,8 @@ function RouteComponent() {
                     playsInline
                     muted
                     className="w-full h-full object-cover"
+                    onLoadedMetadata={() => console.log('✅ Vídeo local: metadata carregada')}
+                    onCanPlay={() => console.log('✅ Vídeo local: pode reproduzir')}
                   />
                 ) : (
                   <VideoOff className="w-8 h-8 text-white" />
