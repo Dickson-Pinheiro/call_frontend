@@ -760,38 +760,17 @@ export function CallProvider({ children }: CallProviderProps) {
         await handleWebRTCSignal(signal);
       },
       onChatMessage: (data) => {
-        console.log('💬 Mensagem de chat recebida:', {
-          messageId: data.id,
-          senderId: data.senderId,
-          senderName: data.senderName,
-          message: data.message,
-          sentAt: data.sentAt
-        });
-        
         // Obter userId do localStorage
         const currentUserId = getUserId();
-        console.log('👤 Current User ID:', currentUserId);
-        console.log('📤 Sender ID:', data.senderId);
-        console.log('🔍 Comparação:', {
-          currentUserId,
-          senderId: data.senderId,
-          areEqual: currentUserId === data.senderId,
-          types: {
-            currentUserId: typeof currentUserId,
-            senderId: typeof data.senderId
-          }
-        });
         
-        // Verificar se a mensagem foi enviada pelo próprio usuário
-        const isOwnMessage = currentUserId !== null && data.senderId === currentUserId;
-        
-        // Se for mensagem própria, não adicionar (já foi adicionada localmente)
-        if (isOwnMessage) {
-          console.log('📝 Mensagem própria detectada, ignorando duplicação');
+        // Nova lógica: Se EU SOU o destinatário, exibir a mensagem
+        const isMessageForMe = data.recipientId === currentUserId;
+        if (!isMessageForMe) {
+          // Só ignora se não for pra mim
           return;
         }
         
-        console.log('✅ Adicionando mensagem de outro usuário');
+        // Adicionar a mensagem recebida
         const newMessage: ChatMessageUI = {
           id: data.id.toString(),
           text: data.message,
@@ -805,7 +784,6 @@ export function CallProvider({ children }: CallProviderProps) {
         setMessages(prev => [...prev, newMessage]);
       },
       onTyping: (data) => {
-        console.log('⌨️ Indicador de digitação:', data.isTyping);
         setIsTyping(data.isTyping);
         
         // Auto-limpar depois de 3 segundos

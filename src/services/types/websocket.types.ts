@@ -19,6 +19,7 @@ export interface ChatMessage {
   callId: number;
   senderId: number;
   senderName: string;
+  recipientId: number;
   message: string;
   sentAt: string;
 }
