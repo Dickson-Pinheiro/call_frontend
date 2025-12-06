@@ -138,6 +138,8 @@ class WebSocketService {
       return;
     }
 
+    console.log('📡 Iniciando subscriptions para todos os tópicos...');
+
     // Status na fila
     this.subscribe('/user/queue/status', (message) => {
       const data: StatusMessage = JSON.parse(message.body);
@@ -152,7 +154,22 @@ class WebSocketService {
 
     // Sinais WebRTC
     this.subscribe('/user/queue/webrtc-signal', (message) => {
+      console.log('🎯 MENSAGEM WEBRTC RECEBIDA NA SUBSCRIPTION:', {
+        destination: message.headers.destination,
+        contentType: message.headers['content-type'],
+        messageId: message.headers['message-id'],
+        bodyLength: message.body?.length,
+        timestamp: new Date().toISOString()
+      });
+      
       const data: WebRTCSignal = JSON.parse(message.body);
+      console.log('🎯 DADOS DO SINAL WEBRTC:', {
+        type: data.type,
+        callId: data.callId,
+        senderId: data.senderId,
+        targetUserId: data.targetUserId
+      });
+      
       this.eventHandlers.onWebRTCSignal?.(data);
     });
 
@@ -178,6 +195,11 @@ class WebSocketService {
     this.subscribe('/user/queue/error', (message) => {
       const data: WebSocketError = JSON.parse(message.body);
       this.eventHandlers.onError?.(data);
+    });
+    
+    console.log('✅ Todas as subscriptions configuradas:', {
+      total: this.subscriptions.size,
+      destinations: Array.from(this.subscriptions.keys())
     });
   }
 

@@ -768,7 +768,9 @@ export function CallProvider({ children }: CallProviderProps) {
           return;
         }
         
-        if (currentCallId && currentCallId === data.callId) {
+        // ✅ Usar ref ao invés do state para evitar race condition
+        const currentCallIdValue = currentCallId;
+        if (currentCallIdValue && currentCallIdValue === data.callId) {
           console.warn('⚠️ Match duplicado ignorado: callId já está ativo');
           return;
         }
@@ -796,14 +798,9 @@ export function CallProvider({ children }: CallProviderProps) {
           timestamp: new Date().toISOString()
         });
         
-        // Verificar se é para a chamada atual
-        if (currentCallId !== null && signal.callId !== currentCallId) {
-          console.warn('⚠️ Sinal WebRTC para callId diferente - ignorando:', {
-            signalCallId: signal.callId,
-            currentCallId: currentCallId
-          });
-          return;
-        }
+        // ✅ REMOVIDA validação de callId - aceitar TODOS os sinais
+        // A validação será feita dentro de handleWebRTCSignal se necessário
+        // Isso evita descartar OFFER que chega antes do currentCallId ser atualizado
         
         await handleWebRTCSignal(signal);
       },
@@ -855,7 +852,9 @@ export function CallProvider({ children }: CallProviderProps) {
         alert(error.error);
       },
     });
-  }, [updateHandlers, navigate, cleanupCall, handleWebRTCSignal, initializeWebRTC, currentCallId, peerId]);
+    // ✅ REMOVER currentCallId e peerId das dependências para evitar re-execução
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateHandlers, navigate, cleanupCall, handleWebRTCSignal, initializeWebRTC]);
 
   // Iniciar busca
   const startSearching = useCallback(async () => {
