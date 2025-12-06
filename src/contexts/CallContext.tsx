@@ -69,6 +69,7 @@ export function CallProvider({ children }: CallProviderProps) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const makingOfferRef = useRef(false);
   const ignoreOfferRef = useRef(false);
+  const pendingSignalsRef = useRef<WebRTCSignal[]>([]); // Fila para sinais que chegam antes do PC estar pronto
 
   // Configuração ICE servers
   const rtcConfig: RTCConfiguration = {
@@ -116,6 +117,12 @@ export function CallProvider({ children }: CallProviderProps) {
       peerConnectionRef.current = null;
     }
 
+    // Limpar fila de sinais pendentes
+    if (pendingSignalsRef.current.length > 0) {
+      console.log('🗑️ Descartando', pendingSignalsRef.current.length, 'sinais pendentes');
+      pendingSignalsRef.current = [];
+    }
+
     setLocalStream(null);
     setRemoteStream(null);
     setCurrentCallId(null);
@@ -136,7 +143,14 @@ export function CallProvider({ children }: CallProviderProps) {
   const handleWebRTCSignal = useCallback(async (signal: WebRTCSignal) => {
     const pc = peerConnectionRef.current;
     if (!pc) {
-      console.warn('⚠️ PeerConnection não existe ainda');
+      console.warn('⚠️ PeerConnection não existe ainda - adicionando sinal à fila');
+      console.log('📋 Sinal enfileirado:', {
+        type: signal.type,
+        callId: signal.callId,
+        senderId: signal.senderId,
+        queueLength: pendingSignalsRef.current.length + 1
+      });
+      pendingSignalsRef.current.push(signal);
       return;
     }
 
@@ -688,6 +702,26 @@ export function CallProvider({ children }: CallProviderProps) {
           cleanupTimeout();
         }
       });
+      
+      // 🔄 PROCESSAR SINAIS PENDENTES DA FILA
+      console.log('🔄 Verificando fila de sinais pendentes:', {
+        queueLength: pendingSignalsRef.current.length
+      });
+      
+      if (pendingSignalsRef.current.length > 0) {
+        console.log('📋 Processando', pendingSignalsRef.current.length, 'sinais da fila...');
+        const pendingSignals = [...pendingSignalsRef.current];
+        pendingSignalsRef.current = []; // Limpar fila
+        
+        for (const signal of pendingSignals) {
+          console.log('⚙️ Processando sinal enfileirado:', {
+            type: signal.type,
+            callId: signal.callId
+          });
+          await handleWebRTCSignal(signal);
+        }
+        console.log('✅ Todos os sinais da fila foram processados');
+      }
     } catch (error) {
       console.error('❌ Erro ao inicializar WebRTC:', error);
       
@@ -755,8 +789,22 @@ export function CallProvider({ children }: CallProviderProps) {
           type: signal.type,
           callId: signal.callId,
           senderId: signal.senderId,
-          hasPeerConnection: !!peerConnectionRef.current
+          currentCallId: currentCallId,
+          peerId: peerId,
+          hasPeerConnection: !!peerConnectionRef.current,
+          pendingQueueLength: pendingSignalsRef.current.length,
+          timestamp: new Date().toISOString()
         });
+        
+        // Verificar se é para a chamada atual
+        if (currentCallId !== null && signal.callId !== currentCallId) {
+          console.warn('⚠️ Sinal WebRTC para callId diferente - ignorando:', {
+            signalCallId: signal.callId,
+            currentCallId: currentCallId
+          });
+          return;
+        }
+        
         await handleWebRTCSignal(signal);
       },
       onChatMessage: (data) => {
@@ -807,7 +855,7 @@ export function CallProvider({ children }: CallProviderProps) {
         alert(error.error);
       },
     });
-  }, [updateHandlers, navigate, cleanupCall, handleWebRTCSignal, initializeWebRTC, currentCallId]);
+  }, [updateHandlers, navigate, cleanupCall, handleWebRTCSignal, initializeWebRTC, currentCallId, peerId]);
 
   // Iniciar busca
   const startSearching = useCallback(async () => {
@@ -874,7 +922,11 @@ export function CallProvider({ children }: CallProviderProps) {
 
   // Enviar mensagem de chat
   const sendChatMessage = useCallback((message: string) => {
-    if (!currentCallId || !message.trim()) return;
+    if (!currentCallId || !message.trim()) {
+      console.warn('⚠️ Mensagem vazia ou callId inválido - mensagem não enviada');
+      console.log('Detalhes:', { message, currentCallId });
+      return;
+    }
     
     const currentUserId = getUserId();
     console.log('📤 Enviando mensagem de chat:', {
