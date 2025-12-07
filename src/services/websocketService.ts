@@ -170,6 +170,17 @@ class WebSocketService {
         targetUserId: data.targetUserId
       });
       
+      // ⚠️ VALIDAÇÃO: Backend deve enviar callId para OFFER/ANSWER
+      if ((data.type === 'offer' || data.type === 'answer') && !data.callId) {
+        console.error('❌ ERRO DO BACKEND: Sinal WebRTC sem callId!', {
+          type: data.type,
+          senderId: data.senderId,
+          bodyReceived: message.body
+        });
+        console.error('🔧 O backend PRECISA incluir callId no payload de OFFER/ANSWER');
+        return; // Não processar sinal inválido
+      }
+      
       this.eventHandlers.onWebRTCSignal?.(data);
     });
 

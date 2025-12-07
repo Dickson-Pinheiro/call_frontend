@@ -141,6 +141,14 @@ export function CallProvider({ children }: CallProviderProps) {
 
   // Processar sinais WebRTC recebidos
   const handleWebRTCSignal = useCallback(async (signal: WebRTCSignal) => {
+    console.log('🚨 handleWebRTCSignal CHAMADO:', {
+      type: signal.type,
+      callId: signal.callId,
+      senderId: signal.senderId,
+      hasPeerConnection: !!peerConnectionRef.current,
+      timestamp: new Date().toISOString()
+    });
+    
     const pc = peerConnectionRef.current;
     if (!pc) {
       console.warn('⚠️ PeerConnection não existe ainda - adicionando sinal à fila');

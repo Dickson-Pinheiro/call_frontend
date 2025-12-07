@@ -11,6 +11,8 @@ import {
   Zap,
   Loader2
 } from "lucide-react";
+import { useCalls, useRatings } from '@/services';
+import { useMemo } from 'react';
 
 export const Route = createFileRoute('/app/dashboard')({
   beforeLoad: requireAuth,
@@ -19,7 +21,22 @@ export const Route = createFileRoute('/app/dashboard')({
 
 function RouteComponent() {
   const { startSearching, callState } = useCall();
+  const { data } = useCalls();
+  const { data: ratings } = useRatings();
   const isSearching = callState === 'searching';
+
+  const recentCalls = useMemo(() => {
+    if (!data) return [];
+    return data
+      .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+      .slice(0, 5)
+      .map(call => ({
+        name: call.user1Name,
+        duration: call.durationSeconds,
+        time: new Date(call.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        rating: ratings?.find(r => r.callId === call.id)?.rating || 0,
+      }));
+  }, [data, ratings]);
 
   const stats = [
     { label: "Chamadas hoje", value: "12", icon: Video },
@@ -27,11 +44,6 @@ function RouteComponent() {
     { label: "Tempo médio", value: "8min", icon: Zap },
   ];
 
-  const recentCalls = [
-    { name: "Maria S.", duration: "12:34", time: "Há 2h", rating: 5 },
-    { name: "João P.", duration: "5:21", time: "Há 4h", rating: 4 },
-    { name: "Ana L.", duration: "18:45", time: "Há 6h", rating: 5 },
-  ];
 
   return (
     <AppLayout>
