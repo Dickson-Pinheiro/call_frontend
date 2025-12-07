@@ -36,9 +36,13 @@ class WebSocketService {
    */
   connect(token: string, handlers: WebSocketEventHandlers = {}): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Se já está conectado, desconectar primeiro para reconectar com novo token
       if (this.client?.connected) {
-        console.log('WebSocket já está conectado');
-        resolve();
+        console.log('⚠️ WebSocket já conectado - desconectando para reconectar com novo token...');
+        this.disconnect().then(() => {
+          // Reconectar com novo token
+          this.connect(token, handlers).then(resolve).catch(reject);
+        });
         return;
       }
 
@@ -315,15 +319,30 @@ class WebSocketService {
    */
   disconnect(): Promise<void> {
     return new Promise((resolve) => {
+      console.log('🔌 Iniciando desconexão do WebSocket...');
+      
       if (!this.client) {
+        console.log('✅ Cliente WebSocket já estava desconectado');
         resolve();
         return;
       }
 
+      // Limpar subscriptions ANTES de desconectar
       this.clearSubscriptions();
-      this.client.deactivate();
-      this.client = null;
-      console.log('🔌 WebSocket desconectado manualmente');
+      
+      // Limpar handlers para evitar processamento de mensagens pendentes
+      this.eventHandlers = {};
+      
+      // Desconectar cliente
+      try {
+        this.client.deactivate();
+        this.client = null;
+        this.isConnecting = false;
+        console.log('✅ WebSocket desconectado com sucesso');
+      } catch (error) {
+        console.error('❌ Erro ao desconectar WebSocket:', error);
+      }
+      
       resolve();
     });
   }

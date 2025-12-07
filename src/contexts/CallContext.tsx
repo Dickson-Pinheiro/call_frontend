@@ -966,6 +966,32 @@ export function CallProvider({ children }: CallProviderProps) {
     wsSendTyping(currentCallId);
   }, [currentCallId, wsSendTyping]);
 
+  // Cleanup completo ao desmontar o provider (logout/troca de usuário)
+  useEffect(() => {
+    return () => {
+      console.log('🧹 CallProvider desmontando - limpando todos os recursos...');
+      
+      // Parar media streams
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
+        localStreamRef.current = null;
+      }
+      
+      // Fechar peer connection
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+      
+      // Limpar fila de sinais
+      if (pendingSignalsRef.current.length > 0) {
+        pendingSignalsRef.current = [];
+      }
+      
+      console.log('✅ Recursos do CallProvider limpos');
+    };
+  }, []);
+
   const value: CallContextValue = {
     callState,
     currentCallId,
