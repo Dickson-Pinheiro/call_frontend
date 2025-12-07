@@ -142,18 +142,51 @@ function RouteComponent() {
   if (callState === 'searching') {
     return (
       <AppLayout>
-        <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100">
-          <div className="text-center">
-            <Loader2 className="h-16 w-16 animate-spin text-blue-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Procurando alguém...
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Aguarde enquanto encontramos uma pessoa para você conversar
-            </p>
-            <Button variant="outline" onClick={stopSearching}>
-              Cancelar
-            </Button>
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center relative overflow-hidden">
+          {/* Background com gradiente */}
+          <div className="absolute inset-0 bg-linear-to-br from-purple-900/20 via-background to-blue-900/20" />
+          
+          {/* Círculos decorativos de fundo */}
+          <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          
+          <div className="relative z-10 text-center max-w-md mx-auto px-4">
+            {/* Card com efeito glass */}
+            <div className="glass rounded-3xl p-8 space-y-6">
+              {/* Ícone animado */}
+              <div className="relative mx-auto w-24 h-24">
+                <div className="absolute inset-0 bg-linear-to-br from-purple-500/20 to-blue-500/20 rounded-full animate-ping" />
+                <div className="relative flex items-center justify-center w-24 h-24 bg-linear-to-br from-purple-500/30 to-blue-500/30 rounded-full">
+                  <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
+                </div>
+              </div>
+              
+              {/* Texto */}
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold bg-linear-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  Procurando alguém...
+                </h2>
+                <p className="text-muted-foreground">
+                  Aguarde enquanto encontramos uma pessoa para você conversar
+                </p>
+              </div>
+              
+              {/* Indicadores de atividade */}
+              <div className="flex justify-center gap-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+              </div>
+              
+              {/* Botão */}
+              <Button 
+                variant="outline" 
+                onClick={stopSearching}
+                className="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors"
+              >
+                Cancelar Busca
+              </Button>
+            </div>
           </div>
         </div>
       </AppLayout>
@@ -163,15 +196,60 @@ function RouteComponent() {
   if (callState === 'connecting') {
     return (
       <AppLayout>
-        <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-linear-to-br from-green-50 to-emerald-100">
-          <div className="text-center">
-            <Loader2 className="h-16 w-16 animate-spin text-green-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Conectando...
-            </h2>
-            <p className="text-gray-600">
-              Estabelecendo conexão com {peerName || 'usuário'}
-            </p>
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center relative overflow-hidden">
+          {/* Background com gradiente */}
+          <div className="absolute inset-0 bg-linear-to-br from-emerald-900/20 via-background to-green-900/20" />
+          
+          {/* Círculos decorativos de fundo */}
+          <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          
+          <div className="relative z-10 text-center max-w-md mx-auto px-4">
+            {/* Card com efeito glass */}
+            <div className="glass rounded-3xl p-8 space-y-6">
+              {/* Avatar do peer */}
+              <div className="relative mx-auto w-24 h-24">
+                <div className="absolute inset-0 bg-linear-to-br from-emerald-500/20 to-green-500/20 rounded-full animate-ping" />
+                <div className="relative flex items-center justify-center w-24 h-24 bg-linear-to-br from-emerald-500/30 to-green-500/30 rounded-full border-4 border-emerald-500/20">
+                  {peerName ? (
+                    <span className="text-3xl font-bold text-emerald-400">
+                      {peerName.charAt(0).toUpperCase()}
+                    </span>
+                  ) : (
+                    <Loader2 className="h-12 w-12 animate-spin text-emerald-500" />
+                  )}
+                </div>
+              </div>
+              
+              {/* Texto */}
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold bg-linear-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                  Conectando...
+                </h2>
+                <p className="text-muted-foreground">
+                  Estabelecendo conexão com{' '}
+                  <span className="font-semibold text-foreground">
+                    {peerName || 'usuário'}
+                  </span>
+                </p>
+              </div>
+              
+              {/* Barra de progresso animada */}
+              <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                <div className="absolute inset-y-0 left-0 bg-linear-to-r from-emerald-500 to-green-500 rounded-full animate-pulse" 
+                     style={{ width: '70%' }} />
+              </div>
+              
+              {/* Status da conexão */}
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                </div>
+                <span>Configurando conexão WebRTC</span>
+              </div>
+            </div>
           </div>
         </div>
       </AppLayout>
