@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/AppLayout";
 import { requireAuth } from "@/lib/auth";
-import { useCompletedCalls, useRatings } from "@/services";
+import { useCompletedCalls, useRatings, useFollow, useUnfollow, useIsFollowing, getUserId } from "@/services";
 import { Spinner } from "@/components/ui/spinner";
 import { 
   Video, 
@@ -14,6 +14,9 @@ import {
   AlertCircle,
   MessageSquare,
   Edit2,
+  UserPlus,
+  UserMinus,
+  Loader2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Call } from "@/services";
@@ -26,6 +29,50 @@ export const Route = createFileRoute('/app/history')({
   component: RouteComponent,
 })
 
+function FollowButton({ userId }: { userId: number }) {
+  const currentUserId = getUserId();
+  const { data: isFollowingData } = useIsFollowing(currentUserId ?? 0, userId);
+  const followMutation = useFollow();
+  const unfollowMutation = useUnfollow();
+
+  const handleToggleFollow = () => {
+    if (!currentUserId) return;
+    
+    if (isFollowingData?.isFollowing) {
+      unfollowMutation.mutate({ followingId: userId, userId: currentUserId });
+    } else {
+      followMutation.mutate({ followingId: userId, userId: currentUserId });
+    }
+  };
+
+  const isFollowing = isFollowingData?.isFollowing ?? false;
+  const isLoading = followMutation.isPending || unfollowMutation.isPending;
+
+  return (
+    <Button
+      variant={isFollowing ? "ghost" : "outline"}
+      size="sm"
+      onClick={handleToggleFollow}
+      disabled={isLoading}
+      className="gap-1.5"
+    >
+      {isLoading ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      ) : isFollowing ? (
+        <>
+          <UserMinus className="w-3.5 h-3.5" />
+          Seguindo
+        </>
+      ) : (
+        <>
+          <UserPlus className="w-3.5 h-3.5" />
+          Seguir
+        </>
+      )}
+    </Button>
+  );
+}
+
 function RouteComponent() {
   const navigate = useNavigate();
   const { data: calls, isLoading, error } = useCompletedCalls();
@@ -35,7 +82,7 @@ function RouteComponent() {
   const [viewRatingDialogOpen, setViewRatingDialogOpen] = useState(false);
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
 
-  const currentUserId = 1;
+  const currentUserId = getUserId() ?? 1;
 
   const handleOpenRatingDialog = (callId: number) => {
     setSelectedCallId(callId);
@@ -82,6 +129,10 @@ function RouteComponent() {
 
   const getOtherParticipantName = (call: Call, currentUserId: number): string => {
     return call.user1Id === currentUserId ? call.user2Name : call.user1Name;
+  };
+
+  const getOtherParticipantId = (call: Call, currentUserId: number): number => {
+    return call.user1Id === currentUserId ? call.user2Id : call.user1Id;
   };
 
   const groupedCalls = useMemo(() => {
@@ -239,8 +290,8 @@ function RouteComponent() {
               
               <div className="space-y-2">
                 {dateCalls.map((call) => {
-                  // TODO: pegar userId do contexto de autenticação
-                  const otherUserName = getOtherParticipantName(call, 1);
+                  const otherUserName = getOtherParticipantName(call, currentUserId);
+                  const otherUserId = getOtherParticipantId(call, currentUserId);
                   const duration = formatDuration(call.durationSeconds);
                   const time = formatTime(call.startedAt);
                   
@@ -267,8 +318,10 @@ function RouteComponent() {
                           </div>
                         </div>
                         
-                        {/* Rating */}
+                        {/* Actions */}
                         <div className="flex items-center gap-2">
+                          <FollowButton userId={otherUserId} />
+                          
                           {(() => {
                             const existingRating = getRatingForCall(call.id);
                             

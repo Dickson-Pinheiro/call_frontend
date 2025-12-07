@@ -5,6 +5,7 @@ import { ChatPanel, type Message } from "@/components/ChatPanel";
 import { AppLayout } from "@/components/AppLayout";
 import { requireAuth } from "@/lib/auth";
 import { useCall } from "@/hooks/useCall";
+import { useFollow, useUnfollow, useIsFollowing, getUserId } from "@/services";
 import { 
   Video, 
   VideoOff, 
@@ -14,7 +15,9 @@ import {
   SkipForward,
   MessageCircle,
   Maximize2,
-  Loader2
+  Loader2,
+  UserPlus,
+  UserMinus
 } from "lucide-react";
 
 export const Route = createFileRoute('/app/call')({
@@ -26,6 +29,7 @@ function RouteComponent() {
   const {
     callState,
     peerName,
+    peerId,
     isVideoEnabled,
     isAudioEnabled,
     localStream,
@@ -43,6 +47,11 @@ function RouteComponent() {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [lastReadCount, setLastReadCount] = useState(0);
+  
+  const currentUserId = getUserId();
+  const { data: isFollowingData } = useIsFollowing(currentUserId ?? 0, peerId ?? 0);
+  const followMutation = useFollow();
+  const unfollowMutation = useUnfollow();
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -117,6 +126,19 @@ function RouteComponent() {
     sendChatMessage(text);
   };
 
+  const handleToggleFollow = () => {
+    if (!peerId || !currentUserId) return;
+    
+    if (isFollowingData?.isFollowing) {
+      unfollowMutation.mutate({ followingId: peerId, userId: currentUserId });
+    } else {
+      followMutation.mutate({ followingId: peerId, userId: currentUserId });
+    }
+  };
+
+  const isFollowing = isFollowingData?.isFollowing ?? false;
+  const isFollowLoading = followMutation.isPending || unfollowMutation.isPending;
+
   if (callState === 'searching') {
     return (
       <AppLayout>
@@ -160,6 +182,36 @@ function RouteComponent() {
     return (
       <AppLayout>
         <div className="flex flex-col bg-background relative overflow-hidden -mx-4 -my-8" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+          {/* Header com nome e botão de seguir */}
+          <div className="absolute top-0 left-0 right-0 z-10 bg-linear-to-b from-black/60 to-transparent p-4">
+            <div className="flex items-center justify-between max-w-6xl mx-auto">
+              <div className="text-white">
+                <h2 className="text-xl font-semibold">{peerName || 'Usuário'}</h2>
+              </div>
+              <Button
+                variant={isFollowing ? "secondary" : "default"}
+                size="sm"
+                onClick={handleToggleFollow}
+                disabled={isFollowLoading || !peerId}
+                className="gap-2"
+              >
+                {isFollowLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isFollowing ? (
+                  <>
+                    <UserMinus className="w-4 h-4" />
+                    Deixar de seguir
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    Seguir
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
           <div className="flex-1 relative">
             <div className="absolute inset-0 bg-black flex items-center justify-center">
               {remoteStream ? (

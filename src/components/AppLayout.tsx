@@ -6,6 +6,7 @@ import {
   History,
   LogOut,
   User,
+  Users,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -64,6 +65,17 @@ export function AppLayout({ children }: AppLayoutProps) {
               >
                 <History className="h-4 w-4" />
                 <span>Histórico</span>
+              </Link>
+
+              <Link
+                to="/app/follows"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
+                activeProps={{
+                  className: "bg-white/10 text-purple-400",
+                }}
+              >
+                <Users className="h-4 w-4" />
+                <span>Seguindo</span>
               </Link>
             </nav>
           </div>

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppHistoryRouteImport } from './routes/app/history'
+import { Route as AppFollowsRouteImport } from './routes/app/follows'
 import { Route as AppDashboardRouteImport } from './routes/app/dashboard'
 import { Route as AppCallRouteImport } from './routes/app/call'
 
@@ -30,6 +31,11 @@ const AppHistoryRoute = AppHistoryRouteImport.update({
   path: '/app/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppFollowsRoute = AppFollowsRouteImport.update({
+  id: '/app/follows',
+  path: '/app/follows',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/app/dashboard',
   path: '/app/dashboard',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/app/call': typeof AppCallRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/follows': typeof AppFollowsRoute
   '/app/history': typeof AppHistoryRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/app/call': typeof AppCallRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/follows': typeof AppFollowsRoute
   '/app/history': typeof AppHistoryRoute
 }
 export interface FileRoutesById {
@@ -61,19 +69,33 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/app/call': typeof AppCallRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/follows': typeof AppFollowsRoute
   '/app/history': typeof AppHistoryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/register' | '/app/call' | '/app/dashboard' | '/app/history'
+  fullPaths:
+    | '/'
+    | '/register'
+    | '/app/call'
+    | '/app/dashboard'
+    | '/app/follows'
+    | '/app/history'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/register' | '/app/call' | '/app/dashboard' | '/app/history'
+  to:
+    | '/'
+    | '/register'
+    | '/app/call'
+    | '/app/dashboard'
+    | '/app/follows'
+    | '/app/history'
   id:
     | '__root__'
     | '/'
     | '/register'
     | '/app/call'
     | '/app/dashboard'
+    | '/app/follows'
     | '/app/history'
   fileRoutesById: FileRoutesById
 }
@@ -82,6 +104,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   AppCallRoute: typeof AppCallRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppFollowsRoute: typeof AppFollowsRoute
   AppHistoryRoute: typeof AppHistoryRoute
 }
 
@@ -108,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/follows': {
+      id: '/app/follows'
+      path: '/app/follows'
+      fullPath: '/app/follows'
+      preLoaderRoute: typeof AppFollowsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/dashboard': {
       id: '/app/dashboard'
       path: '/app/dashboard'
@@ -130,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   AppCallRoute: AppCallRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppFollowsRoute: AppFollowsRoute,
   AppHistoryRoute: AppHistoryRoute,
 }
 export const routeTree = rootRouteImport

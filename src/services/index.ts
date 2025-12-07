@@ -2,6 +2,7 @@ export { default as api, setToken, removeToken, getUserId, setUserId, removeUser
 export { authService } from './authService';
 export { callService } from './callService';
 export { ratingService } from './ratingService';
+export { followService } from './followService';
 export { webSocketService } from './websocketService';
 
 export { useSignup, useLogin, useLogout } from './hooks/useAuth';
@@ -29,6 +30,14 @@ export {
   useDeleteRating,
   ratingKeys,
 } from './hooks/useRatings';
+export {
+  useFollow,
+  useUnfollow,
+  useFollowing,
+  useFollowers,
+  useUserStats,
+  useIsFollowing,
+} from './hooks/useFollow';
 export { useWebSocket } from './hooks/useWebSocket';
 
 export type { 
@@ -51,6 +60,14 @@ export type {
   CreateRatingRequest,
   UpdateRatingRequest,
 } from './types/rating.types';
+
+export type {
+  FollowResponse,
+  UserStatsResponse,
+  IsFollowingResponse,
+  FollowingUser,
+  FollowerUser,
+} from './types/follow.types';
 
 export type {
   WebRTCSignal,
