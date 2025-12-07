@@ -1,4 +1,4 @@
-export { default as api, setToken, removeToken, getUserId, setUserId, removeUserId } from './api';
+export { default as api, setToken, removeToken, getUserId, setUserId, removeUserId, getUserName, setUserName, removeUserName, getUserEmail, setUserEmail, removeUserEmail } from './api';
 export { authService } from './authService';
 export { callService } from './callService';
 export { ratingService } from './ratingService';

@@ -4,7 +4,9 @@ import { requireAuth } from "@/lib/auth"
 import { 
   useUserStats, 
   useCompletedCalls, 
-  getUserId 
+  getUserId,
+  getUserName,
+  getUserEmail
 } from "@/services"
 import { 
   User, 
@@ -27,8 +29,8 @@ export const Route = createFileRoute('/app/profile')({
 
 function RouteComponent() {
   const currentUserId = getUserId()
-  const userName = localStorage.getItem('userName') || 'Usuário'
-  const userEmail = localStorage.getItem('userEmail') || 'email@example.com'
+  const userName = getUserName() || 'Usuário'
+  const userEmail = getUserEmail() || 'email@example.com'
   
   // Buscar estatísticas de follows
   const { data: userStats, isLoading: isLoadingStats } = useUserStats(

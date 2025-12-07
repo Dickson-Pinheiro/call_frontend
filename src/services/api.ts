@@ -32,6 +32,30 @@ export const removeUserId = (): void => {
   localStorage.removeItem('userId');
 };
 
+export const setUserName = (name: string): void => {
+  localStorage.setItem('userName', name);
+};
+
+export const getUserName = (): string | null => {
+  return localStorage.getItem('userName');
+};
+
+export const removeUserName = (): void => {
+  localStorage.removeItem('userName');
+};
+
+export const setUserEmail = (email: string): void => {
+  localStorage.setItem('userEmail', email);
+};
+
+export const getUserEmail = (): string | null => {
+  return localStorage.getItem('userEmail');
+};
+
+export const removeUserEmail = (): void => {
+  localStorage.removeItem('userEmail');
+};
+
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getToken();

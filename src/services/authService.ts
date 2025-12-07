@@ -1,4 +1,4 @@
-import api, { setToken, removeToken, setUserId, removeUserId } from './api';
+import api, { setToken, removeToken, setUserId, removeUserId, setUserName, setUserEmail, removeUserName, removeUserEmail } from './api';
 import type { SignupRequest, LoginRequest, AuthResponse } from './types/auth.types';
 
 export const authService = () => {
@@ -10,10 +10,12 @@ export const authService = () => {
     signup: async (data: SignupRequest): Promise<AuthResponse> => {
       const response = await api.post<AuthResponse>('/api/auth/signup', data);
       
-      // Salva o token e userId automaticamente após o cadastro
+      // Salva o token, userId, name e email automaticamente após o cadastro
       if (response.data.token) {
         setToken(response.data.token);
         setUserId(response.data.userId);
+        setUserName(response.data.name);
+        setUserEmail(response.data.email);
       }
       
       return response.data;
@@ -26,10 +28,12 @@ export const authService = () => {
     login: async (data: LoginRequest): Promise<AuthResponse> => {
       const response = await api.post<AuthResponse>('/api/auth/login', data);
       
-      // Salva o token e userId automaticamente após o login
+      // Salva o token, userId, name e email automaticamente após o login
       if (response.data.token) {
         setToken(response.data.token);
         setUserId(response.data.userId);
+        setUserName(response.data.name);
+        setUserEmail(response.data.email);
       }
       
       return response.data;
@@ -42,9 +46,11 @@ export const authService = () => {
     logout: async (): Promise<void> => {
       await api.post('/api/auth/logout');
       
-      // Remove o token e userId do localStorage
+      // Remove o token, userId, name e email do localStorage
       removeToken();
       removeUserId();
+      removeUserName();
+      removeUserEmail();
     },
   };
 };
