@@ -104,9 +104,11 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <User className="h-5 w-5" />
-            </Button>
+            <Link to="/app/profile">
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="icon"
@@ -231,6 +233,18 @@ export function AppLayout({ children }: AppLayoutProps) {
             >
               <Users className="h-5 w-5" />
               <span className="font-medium">Seguindo</span>
+            </Link>
+
+            <Link
+              to="/app/profile"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 transition-colors"
+              activeProps={{
+                className: "bg-white/10 text-purple-400",
+              }}
+              onClick={closeMobileMenu}
+            >
+              <User className="h-5 w-5" />
+              <span className="font-medium">Perfil</span>
             </Link>
 
             <div className="border-t border-white/10 my-4" />

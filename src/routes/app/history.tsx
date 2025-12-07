@@ -300,26 +300,29 @@ function RouteComponent() {
                       key={call.id}
                       className="glass glass-hover rounded-2xl p-4"
                     >
-                      <div className="flex items-center gap-4">
-                        {/* Avatar */}
-                        <div className="w-12 h-12 rounded-full bg-linear-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-lg font-medium">{otherUserName.charAt(0)}</span>
-                        </div>
-                        
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium">{otherUserName}</p>
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                            <span>{time}</span>
-                            <span>•</span>
-                            <span>{duration}</span>
-                            <span>•</span>
-                            <span className="capitalize">{call.callType.toLowerCase()}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        {/* Avatar + Info */}
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          {/* Avatar */}
+                          <div className="w-12 h-12 rounded-full bg-linear-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0">
+                            <span className="text-lg font-medium">{otherUserName.charAt(0)}</span>
+                          </div>
+                          
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{otherUserName}</p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                              <span>{time}</span>
+                              <span>•</span>
+                              <span>{duration}</span>
+                              <span>•</span>
+                              <span className="capitalize">{call.callType.toLowerCase()}</span>
+                            </div>
                           </div>
                         </div>
                         
                         {/* Actions */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                           <FollowButton userId={otherUserId} />
                           
                           {(() => {
