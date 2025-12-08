@@ -8,6 +8,7 @@ import {
   User,
   Users,
   Menu,
+  Database,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -99,6 +100,17 @@ export function AppLayout({ children }: AppLayoutProps) {
               >
                 <Users className="h-4 w-4" />
                 <span>Seguindo</span>
+              </Link>
+
+              <Link
+                to="/trees"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
+                activeProps={{
+                  className: "bg-white/10 text-purple-400",
+                }}
+              >
+                <Database className="h-4 w-4" />
+                <span>Árvores</span>
               </Link>
             </nav>
           </div>
@@ -245,6 +257,18 @@ export function AppLayout({ children }: AppLayoutProps) {
             >
               <User className="h-5 w-5" />
               <span className="font-medium">Perfil</span>
+            </Link>
+
+            <Link
+              to="/trees"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 transition-colors"
+              activeProps={{
+                className: "bg-white/10 text-purple-400",
+              }}
+              onClick={closeMobileMenu}
+            >
+              <Database className="h-5 w-5" />
+              <span className="font-medium">Árvores AVL</span>
             </Link>
 
             <div className="border-t border-white/10 my-4" />
