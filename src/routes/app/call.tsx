@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChatPanel, type Message } from "@/components/ChatPanel";
 import { AppLayout } from "@/components/AppLayout";
@@ -61,26 +61,20 @@ function RouteComponent() {
   const followMutation = useFollow();
   const unfollowMutation = useUnfollow();
 
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
-
-  // Configurar vídeos apenas uma vez quando os streams estiverem disponíveis
-  // Configurar vídeo local quando disponível e habilitado
-  useEffect(() => {
-    if (localVideoRef.current && localStream && isVideoEnabled) {
-      localVideoRef.current.srcObject = localStream;
-      localVideoRef.current.play().catch(() => {
+  // Callback refs para configurar os vídeos assim que os elementos forem montados
+  const handleLocalVideoRef = useCallback((node: HTMLVideoElement | null) => {
+    if (node && localStream) {
+      node.srcObject = localStream;
+      node.play().catch(() => {
         // Silenciar erros de autoplay
       });
     }
-  }, [localStream, isVideoEnabled]);
+  }, [localStream]);
 
-  // Configurar vídeo remoto quando disponível
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-      remoteVideoRef.current.play().catch(() => {
+  const handleRemoteVideoRef = useCallback((node: HTMLVideoElement | null) => {
+    if (node && remoteStream) {
+      node.srcObject = remoteStream;
+      node.play().catch(() => {
         // Silenciar erros de autoplay
       });
     }
@@ -282,7 +276,7 @@ function RouteComponent() {
             <div className="absolute inset-0 bg-black flex items-center justify-center">
               {remoteStream ? (
                 <video
-                  ref={remoteVideoRef}
+                  ref={handleRemoteVideoRef}
                   autoPlay
                   playsInline
                   className="w-full h-full object-contain"
@@ -304,7 +298,7 @@ function RouteComponent() {
               <div className="w-full h-full bg-black flex items-center justify-center">
                 {localStream && isVideoEnabled ? (
                   <video
-                    ref={localVideoRef}
+                    ref={handleLocalVideoRef}
                     autoPlay
                     playsInline
                     muted
