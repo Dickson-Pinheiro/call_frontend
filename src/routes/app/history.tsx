@@ -235,7 +235,7 @@ function RouteComponent() {
     <AppLayout>
       <div className="relative overflow-hidden">
         {/* Background effects */}
-        <div className="absolute inset-0 bg-linear-to-br from-background via-background to-primary/5" />
+        <div className="absolute inset-0" />
 
         <div className="max-w-4xl mx-auto relative z-10">
           {/* Header */}
