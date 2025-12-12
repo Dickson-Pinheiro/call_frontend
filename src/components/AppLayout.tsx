@@ -22,9 +22,10 @@ import {
 
 interface AppLayoutProps {
   children: ReactNode
+  hideNav?: boolean
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({ children, hideNav = false }: AppLayoutProps) {
   const logout = useLogout()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -34,6 +35,14 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false)
+  }
+
+  if (hideNav) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-purple-900/20 via-background to-blue-900/20">
+        {children}
+      </div>
+    )
   }
 
   return (
@@ -69,16 +78,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <span>Dashboard</span>
               </Link>
 
-              <Link
-                to="/app/call"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
-                activeProps={{
-                  className: "bg-white/10 text-purple-400",
-                }}
-              >
-                <Video className="h-4 w-4" />
-                <span>Chamada</span>
-              </Link>
+
 
               <Link
                 to="/app/history"
@@ -144,16 +144,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <span className="text-xs font-medium">Início</span>
           </Link>
 
-          <Link
-            to="/app/call"
-            className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors"
-            activeProps={{
-              className: "bg-white/10 text-purple-400",
-            }}
-          >
-            <Video className="h-5 w-5" />
-            <span className="text-xs font-medium">Chamada</span>
-          </Link>
+
 
           <Link
             to="/app/history"
@@ -202,17 +193,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <span className="font-medium">Dashboard</span>
             </Link>
 
-            <Link
-              to="/app/call"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 transition-colors"
-              activeProps={{
-                className: "bg-white/10 text-purple-400",
-              }}
-              onClick={closeMobileMenu}
-            >
-              <Video className="h-5 w-5" />
-              <span className="font-medium">Chamada</span>
-            </Link>
+
 
             <Link
               to="/app/history"

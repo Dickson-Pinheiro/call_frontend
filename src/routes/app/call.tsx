@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ChatPanel, type Message } from "@/components/ChatPanel";
@@ -6,12 +6,12 @@ import { AppLayout } from "@/components/AppLayout";
 import { requireAuth } from "@/lib/auth";
 import { useCall } from "@/hooks/useCall";
 import { useFollow, useUnfollow, useIsFollowing, getUserId } from "@/services";
-import { 
-  Video, 
-  VideoOff, 
-  Mic, 
-  MicOff, 
-  Phone, 
+import {
+  Video,
+  VideoOff,
+  Mic,
+  MicOff,
+  Phone,
   SkipForward,
   MessageCircle,
   Maximize2,
@@ -45,14 +45,22 @@ function RouteComponent() {
     sendTypingIndicator,
   } = useCall();
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (callState === 'idle') {
+      navigate({ to: '/app/dashboard' });
+    }
+  }, [callState, navigate]);
+
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [lastReadCount, setLastReadCount] = useState(0);
-  
+
   const currentUserId = getUserId();
   const { data: isFollowingData } = useIsFollowing(currentUserId ?? 0, peerId ?? 0);
   const followMutation = useFollow();
   const unfollowMutation = useUnfollow();
-  
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const hasSetupVideoRef = useRef(false);
@@ -128,7 +136,7 @@ function RouteComponent() {
 
   const handleToggleFollow = () => {
     if (!peerId || !currentUserId) return;
-    
+
     if (isFollowingData?.isFollowing) {
       unfollowMutation.mutate({ followingId: peerId, userId: currentUserId });
     } else {
@@ -141,15 +149,15 @@ function RouteComponent() {
 
   if (callState === 'searching') {
     return (
-      <AppLayout>
-        <div className="flex h-[calc(100vh-4rem)] items-center justify-center relative overflow-hidden">
+      <AppLayout hideNav={true}>
+        <div className="flex h-screen items-center justify-center relative overflow-hidden">
           {/* Background com gradiente */}
           <div className="absolute inset-0 bg-linear-to-br from-purple-900/20 via-background to-blue-900/20" />
-          
+
           {/* Círculos decorativos de fundo */}
           <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-          
+
           <div className="relative z-10 text-center max-w-md mx-auto px-4">
             {/* Card com efeito glass */}
             <div className="glass rounded-3xl p-8 space-y-6">
@@ -160,7 +168,7 @@ function RouteComponent() {
                   <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
                 </div>
               </div>
-              
+
               {/* Texto */}
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold bg-linear-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -170,17 +178,17 @@ function RouteComponent() {
                   Aguarde enquanto encontramos uma pessoa para você conversar
                 </p>
               </div>
-              
+
               {/* Indicadores de atividade */}
               <div className="flex justify-center gap-2">
                 <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" />
                 <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                 <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
               </div>
-              
+
               {/* Botão */}
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={stopSearching}
                 className="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors"
               >
@@ -195,15 +203,15 @@ function RouteComponent() {
 
   if (callState === 'connecting') {
     return (
-      <AppLayout>
-        <div className="flex h-[calc(100vh-4rem)] items-center justify-center relative overflow-hidden">
+      <AppLayout hideNav={true}>
+        <div className="flex h-screen items-center justify-center relative overflow-hidden">
           {/* Background com gradiente */}
           <div className="absolute inset-0 bg-linear-to-br from-emerald-900/20 via-background to-green-900/20" />
-          
+
           {/* Círculos decorativos de fundo */}
           <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-          
+
           <div className="relative z-10 text-center max-w-md mx-auto px-4">
             {/* Card com efeito glass */}
             <div className="glass rounded-3xl p-8 space-y-6">
@@ -220,7 +228,7 @@ function RouteComponent() {
                   )}
                 </div>
               </div>
-              
+
               {/* Texto */}
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold bg-linear-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
@@ -233,13 +241,13 @@ function RouteComponent() {
                   </span>
                 </p>
               </div>
-              
+
               {/* Barra de progresso animada */}
               <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                <div className="absolute inset-y-0 left-0 bg-linear-to-r from-emerald-500 to-green-500 rounded-full animate-pulse" 
-                     style={{ width: '70%' }} />
+                <div className="absolute inset-y-0 left-0 bg-linear-to-r from-emerald-500 to-green-500 rounded-full animate-pulse"
+                  style={{ width: '70%' }} />
               </div>
-              
+
               {/* Status da conexão */}
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <div className="flex gap-1">
@@ -258,8 +266,8 @@ function RouteComponent() {
 
   if (callState === 'connected') {
     return (
-      <AppLayout>
-        <div className="flex flex-col bg-background relative overflow-hidden -mx-4 -my-8" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+      <AppLayout hideNav={true}>
+        <div className="flex flex-col bg-background relative overflow-hidden" style={{ minHeight: '100vh' }}>
           {/* Header com nome e botão de seguir */}
           <div className="absolute top-0 left-0 right-0 z-10 bg-linear-to-b from-black/60 to-transparent p-4">
             <div className="flex items-center justify-between max-w-6xl mx-auto">
@@ -326,16 +334,16 @@ function RouteComponent() {
                   <VideoOff className="w-8 h-8 text-white" />
                 )}
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="absolute top-2 right-2 w-6 h-6 bg-background/50 backdrop-blur-sm"
               >
                 <Maximize2 className="w-3 h-3" />
               </Button>
             </div>
 
-            <ChatPanel 
+            <ChatPanel
               isOpen={isChatOpen}
               onClose={() => setIsChatOpen(false)}
               messages={messages}
@@ -412,8 +420,8 @@ function RouteComponent() {
   // Fallback para estados inesperados - redirecionar para dashboard
   if (callState === 'idle') {
     return (
-      <AppLayout>
-        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+      <AppLayout hideNav={true}>
+        <div className="flex h-screen items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-4" />
             <p className="text-gray-600">Redirecionando...</p>
@@ -425,8 +433,8 @@ function RouteComponent() {
 
   // Estado desconhecido
   return (
-    <AppLayout>
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+    <AppLayout hideNav={true}>
+      <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Estado: {callState}</p>
         </div>
