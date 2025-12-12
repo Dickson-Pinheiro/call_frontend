@@ -63,48 +63,28 @@ function RouteComponent() {
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const hasSetupVideoRef = useRef(false);
+
 
   // Configurar vídeos apenas uma vez quando os streams estiverem disponíveis
+  // Configurar vídeo local quando disponível e habilitado
   useEffect(() => {
-    // Resetar flag quando estado muda para não-connected
-    if (callState !== 'connected') {
-      hasSetupVideoRef.current = false;
-      return;
+    if (localVideoRef.current && localStream && isVideoEnabled) {
+      localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(() => {
+        // Silenciar erros de autoplay
+      });
     }
+  }, [localStream, isVideoEnabled]);
 
-    // Evitar configurar múltiplas vezes
-    if (hasSetupVideoRef.current) return;
-    hasSetupVideoRef.current = true;
-
-    // Configurar vídeo local
-    const setupLocalVideo = () => {
-      if (localVideoRef.current && localStream) {
-        localVideoRef.current.srcObject = localStream;
-        localVideoRef.current.play().catch(() => {
-          // Silenciar erros de autoplay - navegador pode bloquear
-        });
-      }
-    };
-
-    // Configurar vídeo remoto
-    const setupRemoteVideo = () => {
-      if (remoteVideoRef.current && remoteStream) {
-        remoteVideoRef.current.srcObject = remoteStream;
-        remoteVideoRef.current.play().catch(() => {
-          // Silenciar erros de autoplay
-        });
-      }
-    };
-
-    // Pequeno delay para garantir que DOM está pronto
-    const timeoutId = setTimeout(() => {
-      setupLocalVideo();
-      setupRemoteVideo();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [callState, localStream, remoteStream]);
+  // Configurar vídeo remoto quando disponível
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+      remoteVideoRef.current.play().catch(() => {
+        // Silenciar erros de autoplay
+      });
+    }
+  }, [remoteStream]);
 
   // Converter ChatMessageUI para Message (formato do ChatPanel)
   const messages: Message[] = chatMessages.map(msg => ({
