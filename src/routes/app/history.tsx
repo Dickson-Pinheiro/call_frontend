@@ -4,9 +4,9 @@ import { AppLayout } from "@/components/AppLayout";
 import { requireAuth } from "@/lib/auth";
 import { useCompletedCalls, useRatings, useFollow, useUnfollow, useIsFollowing, getUserId } from "@/services";
 import { Spinner } from "@/components/ui/spinner";
-import { 
-  Video, 
-  ArrowLeft, 
+import {
+  Video,
+  ArrowLeft,
   Star,
   Calendar,
   Clock,
@@ -37,7 +37,7 @@ function FollowButton({ userId }: { userId: number }) {
 
   const handleToggleFollow = () => {
     if (!currentUserId) return;
-    
+
     if (isFollowingData?.isFollowing) {
       unfollowMutation.mutate({ followingId: userId, userId: currentUserId });
     } else {
@@ -77,7 +77,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { data: calls, isLoading, error } = useCompletedCalls();
   const { data: ratings } = useRatings();
-  
+
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [viewRatingDialogOpen, setViewRatingDialogOpen] = useState(false);
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
@@ -97,7 +97,7 @@ function RouteComponent() {
   const getRatingForCall = (callId: number) => {
     return ratings?.find(r => r.callId === callId && r.raterId === currentUserId);
   };
-  
+
   const selectedRating = selectedCallId ? getRatingForCall(selectedCallId) : undefined;
 
   const formatDuration = (seconds: number | null): string => {
@@ -137,9 +137,9 @@ function RouteComponent() {
 
   const groupedCalls = useMemo(() => {
     if (!calls) return {};
-    
+
     const sortedCalls = [...calls].sort((a, b) => b.id - a.id);
-    
+
     return sortedCalls.reduce((acc, call) => {
       const dateLabel = formatRelativeDate(call.startedAt);
       if (!acc[dateLabel]) acc[dateLabel] = [];
@@ -147,7 +147,7 @@ function RouteComponent() {
       return acc;
     }, {} as Record<string, Call[]>);
   }, [calls]);
-  
+
   // Calcular avaliação média
   const averageRating = useMemo(() => {
     if (!ratings || ratings.length === 0) return null;
@@ -190,12 +190,12 @@ function RouteComponent() {
     return (
       <AppLayout>
         <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-linear-to-br from-background via-background to-primary/5" />
-          
+          <div className="absolute inset-0" />
+
           <div className="max-w-4xl mx-auto relative z-10">
             <header className="flex items-center gap-4 mb-8">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => navigate({ to: "/app/dashboard" })}
                 className="shrink-0"
@@ -236,174 +236,174 @@ function RouteComponent() {
       <div className="relative overflow-hidden">
         {/* Background effects */}
         <div className="absolute inset-0 bg-linear-to-br from-background via-background to-primary/5" />
-        
+
         <div className="max-w-4xl mx-auto relative z-10">
-        {/* Header */}
-        <header className="flex items-center gap-4 mb-8">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate({ to: "/app/dashboard" })}
-            className="shrink-0"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">Histórico de chamadas</h1>
-            <p className="text-muted-foreground">Suas conversas anteriores</p>
-          </div>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Filter className="w-4 h-4" />
-            Filtrar
-          </Button>
-        </header>
+          {/* Header */}
+          <header className="flex items-center gap-4 mb-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate({ to: "/app/dashboard" })}
+              className="shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold">Histórico de chamadas</h1>
+              <p className="text-muted-foreground">Suas conversas anteriores</p>
+            </div>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Filter className="w-4 h-4" />
+              Filtrar
+            </Button>
+          </header>
 
-        {/* Stats summary */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="glass rounded-2xl p-4 text-center">
-            <Video className="w-6 h-6 text-primary mx-auto mb-2" />
-            <p className="text-2xl font-bold">{calls.length}</p>
-            <p className="text-sm text-muted-foreground">Total de chamadas</p>
+          {/* Stats summary */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="glass rounded-2xl p-4 text-center">
+              <Video className="w-6 h-6 text-primary mx-auto mb-2" />
+              <p className="text-2xl font-bold">{calls.length}</p>
+              <p className="text-sm text-muted-foreground">Total de chamadas</p>
+            </div>
+            <div className="glass rounded-2xl p-4 text-center">
+              <Clock className="w-6 h-6 text-primary mx-auto mb-2" />
+              <p className="text-2xl font-bold">
+                {hours > 0 ? `${hours}h ` : ''}{minutes}min
+              </p>
+              <p className="text-sm text-muted-foreground">Tempo total</p>
+            </div>
+            <div className="glass rounded-2xl p-4 text-center">
+              <Star className="w-6 h-6 text-primary mx-auto mb-2" />
+              <p className="text-2xl font-bold">{averageRating || "-"}</p>
+              <p className="text-sm text-muted-foreground">Avaliação média</p>
+            </div>
           </div>
-          <div className="glass rounded-2xl p-4 text-center">
-            <Clock className="w-6 h-6 text-primary mx-auto mb-2" />
-            <p className="text-2xl font-bold">
-              {hours > 0 ? `${hours}h ` : ''}{minutes}min
-            </p>
-            <p className="text-sm text-muted-foreground">Tempo total</p>
-          </div>
-          <div className="glass rounded-2xl p-4 text-center">
-            <Star className="w-6 h-6 text-primary mx-auto mb-2" />
-            <p className="text-2xl font-bold">{averageRating || "-"}</p>
-            <p className="text-sm text-muted-foreground">Avaliação média</p>
-          </div>
-        </div>
 
-        {/* Calls list */}
-        <div className="space-y-6">
-          {Object.entries(groupedCalls).map(([date, dateCalls]) => (
-            <div key={date}>
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">{date}</span>
-              </div>
-              
-              <div className="space-y-2">
-                {dateCalls.map((call) => {
-                  const otherUserName = getOtherParticipantName(call, currentUserId);
-                  const otherUserId = getOtherParticipantId(call, currentUserId);
-                  const duration = formatDuration(call.durationSeconds);
-                  const time = formatTime(call.startedAt);
-                  
-                  return (
-                    <div 
-                      key={call.id}
-                      className="glass glass-hover rounded-2xl p-4"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                        {/* Avatar + Info */}
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          {/* Avatar */}
-                          <div className="w-12 h-12 rounded-full bg-linear-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0">
-                            <span className="text-lg font-medium">{otherUserName.charAt(0)}</span>
-                          </div>
-                          
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{otherUserName}</p>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-                              <span>{time}</span>
-                              <span>•</span>
-                              <span>{duration}</span>
-                              <span>•</span>
-                              <span className="capitalize">{call.callType.toLowerCase()}</span>
+          {/* Calls list */}
+          <div className="space-y-6">
+            {Object.entries(groupedCalls).map(([date, dateCalls]) => (
+              <div key={date}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">{date}</span>
+                </div>
+
+                <div className="space-y-2">
+                  {dateCalls.map((call) => {
+                    const otherUserName = getOtherParticipantName(call, currentUserId);
+                    const otherUserId = getOtherParticipantId(call, currentUserId);
+                    const duration = formatDuration(call.durationSeconds);
+                    const time = formatTime(call.startedAt);
+
+                    return (
+                      <div
+                        key={call.id}
+                        className="glass glass-hover rounded-2xl p-4"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                          {/* Avatar + Info */}
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            {/* Avatar */}
+                            <div className="w-12 h-12 rounded-full bg-linear-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0">
+                              <span className="text-lg font-medium">{otherUserName.charAt(0)}</span>
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{otherUserName}</p>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                                <span>{time}</span>
+                                <span>•</span>
+                                <span>{duration}</span>
+                                <span>•</span>
+                                <span className="capitalize">{call.callType.toLowerCase()}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                          <FollowButton userId={otherUserId} />
-                          
-                          {(() => {
-                            const existingRating = getRatingForCall(call.id);
-                            
-                            if (existingRating) {
-                              return (
-                                <div className="flex items-center gap-2">
-                                  <RatingDisplay rating={existingRating} compact />
-                                  <div className="flex gap-1">
-                                    {existingRating.comment && (
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                            <FollowButton userId={otherUserId} />
+
+                            {(() => {
+                              const existingRating = getRatingForCall(call.id);
+
+                              if (existingRating) {
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <RatingDisplay rating={existingRating} compact />
+                                    <div className="flex gap-1">
+                                      {existingRating.comment && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => handleViewRating(call.id)}
+                                          title="Ver avaliação completa"
+                                        >
+                                          <MessageSquare className="w-4 h-4" />
+                                        </Button>
+                                      )}
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8"
-                                        onClick={() => handleViewRating(call.id)}
-                                        title="Ver avaliação completa"
+                                        onClick={() => handleOpenRatingDialog(call.id)}
+                                        title="Editar avaliação"
                                       >
-                                        <MessageSquare className="w-4 h-4" />
+                                        <Edit2 className="w-4 h-4" />
                                       </Button>
-                                    )}
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={() => handleOpenRatingDialog(call.id)}
-                                      title="Editar avaliação"
-                                    >
-                                      <Edit2 className="w-4 h-4" />
-                                    </Button>
+                                    </div>
                                   </div>
-                                </div>
+                                );
+                              }
+
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1"
+                                  onClick={() => handleOpenRatingDialog(call.id)}
+                                >
+                                  <Star className="w-4 h-4" />
+                                  Avaliar
+                                </Button>
                               );
-                            }
-                            
-                            return (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1"
-                                onClick={() => handleOpenRatingDialog(call.id)}
-                              >
-                                <Star className="w-4 h-4" />
-                                Avaliar
-                              </Button>
-                            );
-                          })()}
+                            })()}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-      
-      {/* Rating Dialog - Criar ou Editar */}
-      {selectedCallId && (
-        <RatingDialog
-          open={ratingDialogOpen}
-          onOpenChange={setRatingDialogOpen}
-          callId={selectedCallId}
-          userId={currentUserId}
-          existingRating={selectedRating}
-        />
-      )}
-      
-      {/* View Rating Dialog - Visualizar detalhes */}
-      {selectedRating && (
-        <ViewRatingDialog
-          open={viewRatingDialogOpen}
-          onOpenChange={setViewRatingDialogOpen}
-          rating={selectedRating}
-          onEdit={() => {
-            setViewRatingDialogOpen(false);
-            setRatingDialogOpen(true);
-          }}
-        />
-      )}
+
+        {/* Rating Dialog - Criar ou Editar */}
+        {selectedCallId && (
+          <RatingDialog
+            open={ratingDialogOpen}
+            onOpenChange={setRatingDialogOpen}
+            callId={selectedCallId}
+            userId={currentUserId}
+            existingRating={selectedRating}
+          />
+        )}
+
+        {/* View Rating Dialog - Visualizar detalhes */}
+        {selectedRating && (
+          <ViewRatingDialog
+            open={viewRatingDialogOpen}
+            onOpenChange={setViewRatingDialogOpen}
+            rating={selectedRating}
+            onEdit={() => {
+              setViewRatingDialogOpen(false);
+              setRatingDialogOpen(true);
+            }}
+          />
+        )}
       </div>
     </AppLayout>
   );
