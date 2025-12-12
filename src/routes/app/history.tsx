@@ -10,7 +10,7 @@ import {
   Star,
   Calendar,
   Clock,
-  Filter,
+
   AlertCircle,
   MessageSquare,
   Edit2,
@@ -252,10 +252,7 @@ function RouteComponent() {
               <h1 className="text-2xl font-bold">Histórico de chamadas</h1>
               <p className="text-muted-foreground">Suas conversas anteriores</p>
             </div>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter className="w-4 h-4" />
-              Filtrar
-            </Button>
+
           </header>
 
           {/* Stats summary */}

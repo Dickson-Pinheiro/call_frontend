@@ -36,7 +36,7 @@ function RouteComponent() {
               Gerencie quem você segue e seus seguidores
             </p>
           </div>
-          
+
           <div className="flex gap-4 text-center">
             <div>
               <div className="text-3xl font-bold text-primary">{followingCount}</div>
@@ -74,19 +74,19 @@ function RouteComponent() {
             ) : following && following.length > 0 ? (
               following.map((user) => (
                 <Card key={user.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-12 w-12 shrink-0">
                         <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
                           {user.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <h3 className="font-semibold">{user.name}</h3>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold truncate">{user.name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto shrink-0">
                       Seguindo
                     </Button>
                   </div>
@@ -116,19 +116,19 @@ function RouteComponent() {
             ) : followers && followers.length > 0 ? (
               followers.map((user) => (
                 <Card key={user.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-12 w-12 shrink-0">
                         <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
                           {user.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <h3 className="font-semibold">{user.name}</h3>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold truncate">{user.name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>
-                    <Button variant="secondary" size="sm">
+                    <Button variant="secondary" size="sm" className="w-full sm:w-auto shrink-0">
                       Ver Perfil
                     </Button>
                   </div>

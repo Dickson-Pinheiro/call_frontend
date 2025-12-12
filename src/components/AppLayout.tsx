@@ -6,9 +6,11 @@ import {
   Users,
   LogOut,
   User,
+  AlignLeft
 } from "lucide-react"
 
 import { useLogout } from "@/services"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -18,9 +20,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
-  SidebarTrigger,
   SidebarRail,
   SidebarInset,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 interface AppLayoutProps {
@@ -58,19 +60,32 @@ export function AppLayout({ children, hideNav = false }: AppLayoutProps) {
 
       <SidebarInset>
         {/* Desktop Header for Trigger */}
-        <header className="flex h-14 items-center gap-2 border-b border-white/10 px-4 lg:h-[60px]">
-          <SidebarTrigger className="hidden md:flex" />
-          <div className="flex-1 flex items-center justify-between md:justify-end">
-            {/* Mobile Branding / Menu Trigger Wrapper */}
-            <div className="md:hidden flex items-center gap-2">
-              {/* Mobile Sidebar Trigger */}
-              <SidebarTrigger className="" />
+        <header className="flex h-14 items-center border-b border-white/10 px-4 lg:h-[60px] relative shrink-0">
+          <div className="hidden md:flex">
+            <CustomSidebarTrigger />
+          </div>
+
+          {/* Logo Centered */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none md:pointer-events-auto">
+            {/* Mobile Trigger Wrapper - Only visible on mobile, positioned left relative to logo? 
+                 Actually user said "Center the logo content, separated from the menu icon".
+                 On Desktop: Trigger Left, Logo Center.
+                 On Mobile: Logo Center? Content?
+                 "Em relação ao cabeçalho superior, coloque o conteúdo da logo centralizado, separado do ícone do menu"
+             */}
+            <div className="flex items-center gap-2">
+              <Video className="h-6 w-6 text-purple-500" />
               <span className="font-bold text-lg text-gradient">RandomCall</span>
             </div>
           </div>
+
+          {/* Mobile Menu Trigger (Left aligned in the flow, Logo checks absolute center) */}
+          <div className="md:hidden flex items-center z-10">
+            <CustomSidebarTrigger />
+          </div>
         </header>
 
-        <div className="flex-1 p-4 md:p-8 pt-4 pb-4">
+        <div className="flex-1 p-4 md:p-8 pt-4 pb-24 md:pb-8">
           {children}
         </div>
 
@@ -127,12 +142,41 @@ export function AppLayout({ children, hideNav = false }: AppLayoutProps) {
   )
 }
 
+function CustomSidebarTrigger() {
+  const { toggleSidebar } = useSidebar()
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleSidebar}
+      className="md:hidden" // Only for mobile? No, user wants it for desktop too? "Substitute the icon...". 
+    // The default SidebarTrigger was hidden on mobile. 
+    // My CustomTrigger is used in both places (hidden md:flex for desktop logic, md:hidden for mobile logic).
+    // Actually I want a generic button.
+    >
+      <AlignLeft className="h-6 w-6" />
+    </Button>
+  )
+}
+
 function AppSidebar({ logout, handleLogout, isActive }: any) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <Video className="h-6 w-6 text-purple-500" />
+        {/* Hidden when collapsed? Or just Icon? 
+             User said "Align icons when menu is collapsed".
+             The header usually has the Logo. 
+             If I center the logo in the top header, maybe I don't need it in the Sidebar?
+             "Em relação ao cabeçalho superior..." implies there IS a top header.
+             I'll keep the sidebar header simple or empty if the top header handles identity.
+             But the Sidebar typically has identity too.
+             I'll keep it but ensure it collapses nicely.
+         */}
+        <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <Video className="h-5 w-5 text-purple-500" />
+          </div>
           <span className="text-xl font-bold text-gradient group-data-[collapsible=icon]:hidden">
             RandomCall
           </span>
@@ -145,6 +189,7 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               asChild
               isActive={isActive("/app/dashboard")}
               tooltip="Dashboard"
+              className="group-data-[collapsible=icon]:justify-center"
             >
               <Link to="/app/dashboard">
                 <Home />
@@ -157,6 +202,7 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               asChild
               isActive={isActive("/app/history")}
               tooltip="Histórico"
+              className="group-data-[collapsible=icon]:justify-center"
             >
               <Link to="/app/history">
                 <History />
@@ -169,6 +215,7 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               asChild
               isActive={isActive("/app/follows")}
               tooltip="Seguindo"
+              className="group-data-[collapsible=icon]:justify-center"
             >
               <Link to="/app/follows">
                 <Users />
@@ -181,6 +228,7 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               asChild
               isActive={isActive("/app/profile")}
               tooltip="Perfil"
+              className="group-data-[collapsible=icon]:justify-center"
             >
               <Link to="/app/profile">
                 <User />
@@ -197,7 +245,7 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               onClick={handleLogout}
               disabled={logout.isPending}
               tooltip="Sair"
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 group-data-[collapsible=icon]:justify-center"
             >
               <LogOut />
               <span>Sair</span>

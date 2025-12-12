@@ -4,11 +4,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { requireAuth } from "@/lib/auth";
 import { useCall } from "@/hooks/useCall";
 import {
-  Video,
   History,
-  Users,
   Play,
-  Zap,
   Loader2
 } from "lucide-react";
 import { useCalls, useRatings } from '@/services';
@@ -38,11 +35,7 @@ function RouteComponent() {
       }));
   }, [data, ratings]);
 
-  const stats = [
-    { label: "Chamadas hoje", value: "12", icon: Video },
-    { label: "Usuários online", value: "2.4k", icon: Users },
-    { label: "Tempo médio", value: "8min", icon: Zap },
-  ];
+
 
 
   return (
@@ -87,16 +80,7 @@ function RouteComponent() {
                 </div>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-4">
-                {stats.map((stat, index) => (
-                  <div key={index} className="glass glass-hover rounded-2xl p-4 text-center">
-                    <stat.icon className="w-6 h-6 text-primary mx-auto mb-2" />
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
+
             </div>
 
             {/* Right column - Recent calls */}
