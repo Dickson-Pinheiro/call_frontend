@@ -28,7 +28,7 @@ function RouteComponent() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
-  
+
   const login = useLogin({
     onSuccess: () => {
       navigate({ to: redirect || '/app/dashboard' });
@@ -49,10 +49,8 @@ function RouteComponent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-linear-to-br from-background via-background to-primary/10" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000" />
-      
+
+
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary gradient-glow mb-4">
@@ -64,7 +62,7 @@ function RouteComponent() {
 
         <div className="glass rounded-2xl p-8">
           <h2 className="text-xl font-semibold mb-6">Entrar na sua conta</h2>
-          
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -115,8 +113,8 @@ function RouteComponent() {
               </div>
             )}
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={login.isPending}
               className="w-full h-12 gradient-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
             >

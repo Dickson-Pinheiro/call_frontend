@@ -125,9 +125,6 @@ function RouteComponent() {
     return (
       <AppLayout hideNav={true}>
         <div className="flex h-screen items-center justify-center relative overflow-hidden">
-          {/* Background com gradiente */}
-          <div className="absolute inset-0 bg-linear-to-br from-purple-900/20 via-background to-blue-900/20" />
-
           {/* Círculos decorativos de fundo */}
           <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
@@ -179,9 +176,6 @@ function RouteComponent() {
     return (
       <AppLayout hideNav={true}>
         <div className="flex h-screen items-center justify-center relative overflow-hidden">
-          {/* Background com gradiente */}
-          <div className="absolute inset-0 bg-linear-to-br from-emerald-900/20 via-background to-green-900/20" />
-
           {/* Círculos decorativos de fundo */}
           <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />

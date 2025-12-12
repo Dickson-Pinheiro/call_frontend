@@ -132,6 +132,8 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-image: linear-gradient(to bottom right, color-mix(in oklch, var(--color-purple-900), transparent 80%), var(--background), color-mix(in oklch, var(--color-blue-900), transparent 80%));
+    background-attachment: fixed;
     font-family: 'Inter', sans-serif;
   }
 }
