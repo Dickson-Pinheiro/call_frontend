@@ -3,11 +3,11 @@ export { authService } from './authService';
 export { callService } from './callService';
 export { ratingService } from './ratingService';
 export { followService } from './followService';
-export { treeService } from './treeService';
+
 export { webSocketService } from './websocketService';
 
 export { useSignup, useLogin, useLogout } from './hooks/useAuth';
-export { 
+export {
   useCalls,
   useCallsByStatus,
   useActiveCalls,
@@ -39,14 +39,14 @@ export {
   useUserStats,
   useIsFollowing,
 } from './hooks/useFollow';
-export { useAllTrees, useTreeByType } from './hooks/useTrees';
+
 export { useWebSocket } from './hooks/useWebSocket';
 
-export type { 
-  SignupRequest, 
-  LoginRequest, 
-  AuthResponse, 
-  User 
+export type {
+  SignupRequest,
+  LoginRequest,
+  AuthResponse,
+  User
 } from './types/auth.types';
 
 export type {
@@ -71,12 +71,7 @@ export type {
   FollowerUser,
 } from './types/follow.types';
 
-export type {
-  TreeNode,
-  TreeStructure,
-  AllTreesResponse,
-  TreeType,
-} from './types/tree.types';
+
 
 export type {
   WebRTCSignal,

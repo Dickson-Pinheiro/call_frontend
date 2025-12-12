@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TreesRouteImport } from './routes/trees'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppProfileRouteImport } from './routes/app/profile'
@@ -18,11 +17,6 @@ import { Route as AppFollowsRouteImport } from './routes/app/follows'
 import { Route as AppDashboardRouteImport } from './routes/app/dashboard'
 import { Route as AppCallRouteImport } from './routes/app/call'
 
-const TreesRoute = TreesRouteImport.update({
-  id: '/trees',
-  path: '/trees',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -62,7 +56,6 @@ const AppCallRoute = AppCallRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/register': typeof RegisterRoute
-  '/trees': typeof TreesRoute
   '/app/call': typeof AppCallRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/follows': typeof AppFollowsRoute
@@ -72,7 +65,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/register': typeof RegisterRoute
-  '/trees': typeof TreesRoute
   '/app/call': typeof AppCallRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/follows': typeof AppFollowsRoute
@@ -83,7 +75,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/register': typeof RegisterRoute
-  '/trees': typeof TreesRoute
   '/app/call': typeof AppCallRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/follows': typeof AppFollowsRoute
@@ -95,7 +86,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/register'
-    | '/trees'
     | '/app/call'
     | '/app/dashboard'
     | '/app/follows'
@@ -105,7 +95,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/register'
-    | '/trees'
     | '/app/call'
     | '/app/dashboard'
     | '/app/follows'
@@ -115,7 +104,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/register'
-    | '/trees'
     | '/app/call'
     | '/app/dashboard'
     | '/app/follows'
@@ -126,7 +114,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RegisterRoute: typeof RegisterRoute
-  TreesRoute: typeof TreesRoute
   AppCallRoute: typeof AppCallRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppFollowsRoute: typeof AppFollowsRoute
@@ -136,13 +123,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/trees': {
-      id: '/trees'
-      path: '/trees'
-      fullPath: '/trees'
-      preLoaderRoute: typeof TreesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -198,7 +178,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RegisterRoute: RegisterRoute,
-  TreesRoute: TreesRoute,
   AppCallRoute: AppCallRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppFollowsRoute: AppFollowsRoute,
