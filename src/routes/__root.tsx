@@ -5,7 +5,10 @@ import { CallProvider } from '@/contexts/CallContext'
 
 const RootLayout = () => (
   <CallProvider>
-    <Outlet />
+    <div className='p-4'>
+
+      <Outlet />
+    </div>
     <Toaster position="top-right" />
     <TanStackRouterDevtools />
   </CallProvider>
