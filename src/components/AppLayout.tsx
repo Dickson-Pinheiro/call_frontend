@@ -70,7 +70,7 @@ export function AppLayout({ children, hideNav = false }: AppLayoutProps) {
           </div>
         </header>
 
-        <div className="flex-1 p-4 md:p-8 pt-0">
+        <div className="flex-1 p-4 md:p-8 pt-4 pb-4">
           {children}
         </div>
 
