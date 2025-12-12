@@ -150,10 +150,7 @@ function CustomSidebarTrigger() {
       variant="ghost"
       size="icon"
       onClick={toggleSidebar}
-      className="md:hidden" // Only for mobile? No, user wants it for desktop too? "Substitute the icon...". 
-    // The default SidebarTrigger was hidden on mobile. 
-    // My CustomTrigger is used in both places (hidden md:flex for desktop logic, md:hidden for mobile logic).
-    // Actually I want a generic button.
+    // Removed md:hidden to allow desktop usage
     >
       <AlignLeft className="h-6 w-6" />
     </Button>
@@ -189,11 +186,11 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               asChild
               isActive={isActive("/app/dashboard")}
               tooltip="Dashboard"
-              className="group-data-[collapsible=icon]:justify-center"
+              className="group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-2"
             >
               <Link to="/app/dashboard">
                 <Home />
-                <span>Dashboard</span>
+                <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -202,11 +199,11 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               asChild
               isActive={isActive("/app/history")}
               tooltip="Histórico"
-              className="group-data-[collapsible=icon]:justify-center"
+              className="group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-2"
             >
               <Link to="/app/history">
                 <History />
-                <span>Histórico</span>
+                <span className="group-data-[collapsible=icon]:hidden">Histórico</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -215,11 +212,11 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               asChild
               isActive={isActive("/app/follows")}
               tooltip="Seguindo"
-              className="group-data-[collapsible=icon]:justify-center"
+              className="group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-2"
             >
               <Link to="/app/follows">
                 <Users />
-                <span>Seguindo</span>
+                <span className="group-data-[collapsible=icon]:hidden">Seguindo</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -228,11 +225,11 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               asChild
               isActive={isActive("/app/profile")}
               tooltip="Perfil"
-              className="group-data-[collapsible=icon]:justify-center"
+              className="group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-2"
             >
               <Link to="/app/profile">
                 <User />
-                <span>Perfil</span>
+                <span className="group-data-[collapsible=icon]:hidden">Perfil</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -245,10 +242,10 @@ function AppSidebar({ logout, handleLogout, isActive }: any) {
               onClick={handleLogout}
               disabled={logout.isPending}
               tooltip="Sair"
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 group-data-[collapsible=icon]:justify-center"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-2"
             >
               <LogOut />
-              <span>Sair</span>
+              <span className="group-data-[collapsible=icon]:hidden">Sair</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
